@@ -4,10 +4,6 @@
 
 JSON Schema definitions for AI coding agent session formats.
 
-## Why JSONL?
-
-Local-first coding agents like [Claude Code](https://github.com/anthropics/claude-code) and [Codex](https://github.com/openai/codex) store sessions as **JSONL** (JSON Lines) files - one JSON object per line.
-
 ## Why This Repo Exists
 
 To build apps on top of coding agents, you need to parse and load their session messages.
