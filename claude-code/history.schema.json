@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/moru-ai/agent-schemas/claude-code/history.schema.json",
+  "title": "Claude Code History Schema",
+  "description": "Schema for Claude Code CLI history.jsonl file (~/.claude/history.jsonl). Each line should validate against this schema.",
+  "x-generated-date": "2026-01-08",
+
+  "$ref": "#/$defs/HistoryEntry",
+
+  "$defs": {
+    "UUID": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "UUID v4 format"
+    },
+
+    "HistoryEntry": {
+      "type": "object",
+      "description": "Entry in ~/.claude/history.jsonl",
+      "properties": {
+        "display": {
+          "type": "string",
+          "description": "User's input text (may be truncated)"
+        },
+        "pastedContents": {
+          "type": "object",
+          "description": "Pasted content map",
+          "additionalProperties": true
+        },
+        "timestamp": {
+          "type": "integer",
+          "description": "Unix timestamp in milliseconds"
+        },
+        "project": {
+          "type": "string",
+          "description": "Absolute path to project directory"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/UUID",
+          "description": "Session UUID linking to session file"
+        }
+      },
+      "required": ["display", "pastedContents", "timestamp", "project", "sessionId"],
+      "additionalProperties": true
+    }
+  }
+}
