@@ -42,13 +42,17 @@ def parse_semver(version: str) -> tuple[int, int, int]:
     return (int(parts[0]), int(parts[1]), int(parts[2]))
 
 
-def detect_version(lines: list[dict]) -> str:
+MIN_SUPPORTED_VERSION = (2, 0, 76)
+
+
+def detect_version(lines: list[dict]) -> Tuple[Optional[str], Optional[str]]:
     """Detect CLI version from session lines.
 
-    Returns the schema version key to use:
-    - "2.1.59" for CLI >= 2.1.2 (progress messages, new tools, caller field)
-    - "2.1.1"  for CLI 2.1.0-2.1.1 (toolUseResult, sourceToolAssistantUUID)
-    - "2.0.76" for CLI < 2.1.0
+    Returns (schema_key, raw_version):
+    - ("2.1.59", raw) for CLI >= 2.1.2
+    - ("2.1.1", raw)  for CLI 2.1.0-2.1.1
+    - ("2.0.76", raw)  for CLI 2.0.76-2.0.x
+    - (None, raw)     for CLI < 2.0.76 (unsupported)
     """
     for line in lines:
         if "version" in line and line["version"]:
@@ -57,16 +61,18 @@ def detect_version(lines: list[dict]) -> str:
                 major, minor, patch = parse_semver(version)
             except (ValueError, IndexError):
                 continue
+            if (major, minor, patch) < MIN_SUPPORTED_VERSION:
+                return None, version
             if major >= 2 and minor >= 1 and patch >= 2:
-                return "2.1.59"
+                return "2.1.59", version
             if major >= 2 and minor >= 1:
-                return "2.1.1"
-            return "2.0.76"
+                return "2.1.1", version
+            return "2.0.76", version
     # If no version found, check for progress messages (v2.1.2+)
     for line in lines:
         if line.get("type") == "progress":
-            return "2.1.59"
-    return "2.0.76"  # Default
+            return "2.1.59", None
+    return "2.0.76", None
 
 
 def get_schema_for_version(version: str) -> dict:
@@ -93,11 +99,17 @@ def validate_line(line: dict, validator: Draft202012Validator, line_num: int, fi
     return errors
 
 
-def validate_file(file_path: Path) -> Tuple[int, int, list[dict]]:
-    """Validate a single JSONL file. Returns (total_lines, valid_lines, errors)."""
-    errors = []
-    total_lines = 0
-    valid_lines = 0
+def validate_file(file_path: Path) -> dict:
+    """Validate a single JSONL file. Returns a result dict."""
+    result = {
+        "total_lines": 0,
+        "valid_lines": 0,
+        "errors": [],
+        "skipped": False,
+        "skip_reason": None,
+        "raw_version": None,
+        "schema_version": None,
+    }
 
     # First pass: read all lines and detect version
     lines = []
@@ -110,7 +122,7 @@ def validate_file(file_path: Path) -> Tuple[int, int, list[dict]]:
                 data = json.loads(line)
                 lines.append((line_num, data))
             except json.JSONDecodeError as e:
-                errors.append({
+                result["errors"].append({
                     "file": str(file_path),
                     "line": line_num,
                     "path": "(parse)",
@@ -120,23 +132,33 @@ def validate_file(file_path: Path) -> Tuple[int, int, list[dict]]:
                 })
 
     if not lines:
-        return 0, 0, errors
+        return result
 
     # Detect version
-    version = detect_version([l[1] for l in lines])
-    schema = get_schema_for_version(version)
+    schema_version, raw_version = detect_version([l[1] for l in lines])
+    result["raw_version"] = raw_version
+    result["schema_version"] = schema_version
+
+    if schema_version is None:
+        min_ver = ".".join(str(v) for v in MIN_SUPPORTED_VERSION)
+        result["skipped"] = True
+        result["skip_reason"] = f"CLI version {raw_version} < minimum supported {min_ver}"
+        result["total_lines"] = len(lines)
+        return result
+
+    schema = get_schema_for_version(schema_version)
     validator = Draft202012Validator(schema)
 
     # Validate each line
     for line_num, data in lines:
-        total_lines += 1
+        result["total_lines"] += 1
         line_errors = validate_line(data, validator, line_num, str(file_path))
         if line_errors:
-            errors.extend(line_errors)
+            result["errors"].extend(line_errors)
         else:
-            valid_lines += 1
+            result["valid_lines"] += 1
 
-    return total_lines, valid_lines, errors
+    return result
 
 
 def validate_directory(dir_path: Path) -> dict:
@@ -147,7 +169,8 @@ def validate_directory(dir_path: Path) -> dict:
         "valid_lines": 0,
         "failed_files": 0,
         "errors": [],
-        "error_types": defaultdict(int)
+        "error_types": defaultdict(int),
+        "skipped_files": [],  # list of (filename, version, reason, num_lines)
     }
 
     jsonl_files = list(dir_path.glob("*.jsonl"))
@@ -158,15 +181,24 @@ def validate_directory(dir_path: Path) -> dict:
             continue
 
         try:
-            total, valid, errors = validate_file(file_path)
-            results["total_lines"] += total
-            results["valid_lines"] += valid
+            file_result = validate_file(file_path)
 
-            if errors:
+            if file_result["skipped"]:
+                results["skipped_files"].append((
+                    file_path.name,
+                    file_result["raw_version"],
+                    file_result["skip_reason"],
+                    file_result["total_lines"],
+                ))
+                continue
+
+            results["total_lines"] += file_result["total_lines"]
+            results["valid_lines"] += file_result["valid_lines"]
+
+            if file_result["errors"]:
                 results["failed_files"] += 1
-                results["errors"].extend(errors)
-                for e in errors:
-                    # Categorize error types
+                results["errors"].extend(file_result["errors"])
+                for e in file_result["errors"]:
                     if "parse error" in e["message"].lower():
                         results["error_types"]["JSON parse errors"] += 1
                     elif "required" in e["message"].lower():
@@ -197,11 +229,23 @@ def print_results(results: dict, verbose: bool = False):
     print("VALIDATION RESULTS")
     print("=" * 60)
 
-    print(f"\nFiles scanned:  {results['total_files']}")
-    print(f"Total lines:    {results['total_lines']}")
-    print(f"Valid lines:    {results['valid_lines']}")
-    print(f"Failed lines:   {results['total_lines'] - results['valid_lines']}")
-    print(f"Files w/errors: {results['failed_files']}")
+    skipped = results.get("skipped_files", [])
+    validated_files = results["total_files"] - len(skipped)
+
+    print(f"\nFiles scanned:   {results['total_files']}")
+    print(f"Files validated: {validated_files}")
+    print(f"Files skipped:   {len(skipped)}")
+    print(f"Total lines:     {results['total_lines']}")
+    print(f"Valid lines:     {results['valid_lines']}")
+    print(f"Failed lines:    {results['total_lines'] - results['valid_lines']}")
+    print(f"Files w/errors:  {results['failed_files']}")
+
+    if skipped:
+        min_ver = ".".join(str(v) for v in MIN_SUPPORTED_VERSION)
+        skipped_lines = sum(s[3] for s in skipped)
+        print(f"\nSkipped files (CLI < {min_ver}, no schema available):")
+        for name, version, reason, num_lines in skipped:
+            print(f"  {name}: v{version} ({num_lines} lines)")
 
     if results["error_types"]:
         print("\nError types:")
@@ -221,6 +265,12 @@ def print_results(results: dict, verbose: bool = False):
                 print(f"    Data: {error['snippet'][:100]}...")
 
     # Summary
+    if results['total_lines'] == 0 and skipped:
+        print(f"\n{'=' * 60}")
+        print("NO LINES VALIDATED (all files below minimum supported version)")
+        print("=" * 60)
+        return 0
+
     success_rate = (results['valid_lines'] / results['total_lines'] * 100) if results['total_lines'] > 0 else 100
     print(f"\n{'=' * 60}")
     print(f"SUCCESS RATE: {success_rate:.2f}%")
@@ -247,16 +297,23 @@ def main():
         sys.exit(1)
 
     if target.is_file():
-        total, valid, errors = validate_file(target)
+        file_result = validate_file(target)
+        skipped = []
+        if file_result["skipped"]:
+            skipped.append((
+                target.name, file_result["raw_version"],
+                file_result["skip_reason"], file_result["total_lines"],
+            ))
         results = {
             "total_files": 1,
-            "total_lines": total,
-            "valid_lines": valid,
-            "failed_files": 1 if errors else 0,
-            "errors": errors,
-            "error_types": defaultdict(int)
+            "total_lines": 0 if file_result["skipped"] else file_result["total_lines"],
+            "valid_lines": file_result["valid_lines"],
+            "failed_files": 1 if file_result["errors"] else 0,
+            "errors": file_result["errors"],
+            "error_types": defaultdict(int),
+            "skipped_files": skipped,
         }
-        for e in errors:
+        for e in file_result["errors"]:
             if "parse error" in e["message"].lower():
                 results["error_types"]["JSON parse errors"] += 1
             elif "required" in e["message"].lower():

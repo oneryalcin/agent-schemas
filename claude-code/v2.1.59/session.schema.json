@@ -703,6 +703,25 @@
       "additionalProperties": false
     },
 
+    "DocumentBlock": {
+      "type": "object",
+      "description": "PDF or document content block (e.g. pasted PDFs)",
+      "properties": {
+        "type": { "const": "document" },
+        "source": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["base64"] },
+            "media_type": { "type": "string", "enum": ["application/pdf"] },
+            "data": { "type": "string", "contentEncoding": "base64" }
+          },
+          "required": ["type", "media_type", "data"]
+        }
+      },
+      "required": ["type", "source"],
+      "additionalProperties": false
+    },
+
     "ContentBlock": {
       "oneOf": [
         { "$ref": "#/$defs/TextBlock" },
@@ -710,6 +729,7 @@
         { "$ref": "#/$defs/ToolUseBlock" },
         { "$ref": "#/$defs/ToolResultBlock" },
         { "$ref": "#/$defs/ImageBlock" },
+        { "$ref": "#/$defs/DocumentBlock" },
         { "$ref": "#/$defs/ToolReferenceBlock" }
       ]
     },
