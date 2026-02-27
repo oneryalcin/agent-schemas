@@ -26,6 +26,7 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).parent
 SCHEMA_V2_0_76 = SCRIPT_DIR / "v2.0.76" / "session.schema.json"
 SCHEMA_V2_1_1 = SCRIPT_DIR / "v2.1.1" / "session.schema.json"
+SCHEMA_V2_1_59 = SCRIPT_DIR / "v2.1.59" / "session.schema.json"
 SCHEMA_HISTORY = SCRIPT_DIR / "history.schema.json"
 
 
@@ -35,19 +36,43 @@ def load_schema(path: Path) -> dict:
         return json.load(f)
 
 
+def parse_semver(version: str) -> tuple[int, int, int]:
+    """Parse a semver string into (major, minor, patch)."""
+    parts = version.split(".")
+    return (int(parts[0]), int(parts[1]), int(parts[2]))
+
+
 def detect_version(lines: list[dict]) -> str:
-    """Detect CLI version from session lines."""
+    """Detect CLI version from session lines.
+
+    Returns the schema version key to use:
+    - "2.1.59" for CLI >= 2.1.2 (progress messages, new tools, caller field)
+    - "2.1.1"  for CLI 2.1.0-2.1.1 (toolUseResult, sourceToolAssistantUUID)
+    - "2.0.76" for CLI < 2.1.0
+    """
     for line in lines:
         if "version" in line and line["version"]:
             version = line["version"]
-            if version.startswith("2.1."):
+            try:
+                major, minor, patch = parse_semver(version)
+            except (ValueError, IndexError):
+                continue
+            if major >= 2 and minor >= 1 and patch >= 2:
+                return "2.1.59"
+            if major >= 2 and minor >= 1:
                 return "2.1.1"
             return "2.0.76"
+    # If no version found, check for progress messages (v2.1.2+)
+    for line in lines:
+        if line.get("type") == "progress":
+            return "2.1.59"
     return "2.0.76"  # Default
 
 
 def get_schema_for_version(version: str) -> dict:
     """Get the appropriate schema for a version."""
+    if version == "2.1.59":
+        return load_schema(SCHEMA_V2_1_59)
     if version == "2.1.1":
         return load_schema(SCHEMA_V2_1_1)
     return load_schema(SCHEMA_V2_0_76)
