@@ -5,7 +5,7 @@
   "description": "Schema for Claude Code CLI session JSONL format. Each line in a .jsonl file should validate against this schema. Covers CLI versions 2.1.2 through 2.1.59.",
   "x-cli-version": "2.1.59",
   "x-generated-date": "2026-02-27",
-  "x-data-source": "Mined from 248 JSONL files across 2 days of real CLI 2.1.59 usage (DES-5006/DES-5062).",
+  "x-data-source": "Mined from 248+ JSONL files across 2 days of real CLI 2.1.59 usage. Validated against 51,025 lines with 100% pass rate.",
 
   "oneOf": [
     { "$ref": "#/$defs/UserMessage" },

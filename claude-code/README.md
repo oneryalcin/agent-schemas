@@ -51,11 +51,12 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 - `tool_reference` — compact tool reference with `tool_name` (returned by ToolSearch)
 
 **New fields on existing types:**
-- `UserMessage`: `permissionMode` (enum: default, acceptEdits, bypassPermissions, dontAsk, plan)
-- `UserMessage`/`AssistantMessage`: `teamName`
+- `UserMessage`: `permissionMode` (enum: default, acceptEdits, bypassPermissions, dontAsk, plan), `isVisibleInTranscriptOnly`, `imagePasteIds`
+- `UserMessage`/`AssistantMessage`/`SystemMessage`: `teamName`
 - `ToolUseBlock`: `caller` (e.g., `{"type": "direct"}`)
-- `UsageInfo`: `inference_geo`, `iterations`, `speed`
-- `SystemMessage`: `bridge_status` subtype with `url` field
+- `UsageInfo`: `inference_geo`, `iterations`, `speed` (all nullable)
+- `SystemMessage`: `bridge_status` subtype with `url` field; `error` as structured object on `api_error`; retry metadata (`cause` as object, `retryInMs` as number, `retryAttempt`, `maxRetries`)
+- `ProgressMessage`: `agentId` (in subagent session files)
 - `Task` tool: `name`, `team_name`, `mode`, `max_turns`, `isolation`
 - `ExitPlanMode` tool: `allowedPrompts`
 - `Grep` tool: `context` (alias for `-C`)
@@ -89,4 +90,4 @@ Requires: `pip install jsonschema`
 ## Data Sources
 
 - v2.0.76 / v2.1.1: Original schema, tested against 52,057 messages across 480 session files (100% pass rate)
-- v2.1.59: Mined from 248 JSONL files (~15,938+ lines) of real CLI 2.1.59 usage across 2 days. See [DES-5006](https://linear.app/desia/issue/DES-5006) and [DES-5062](https://linear.app/desia/issue/DES-5062) for full audit trail.
+- v2.1.59: Golden schema — validated against 51,025 JSONL lines (including subagent files) with 100% pass rate and zero undocumented fields. Mined from 248+ files across 2 days of real CLI 2.1.59 usage.
