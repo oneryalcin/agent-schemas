@@ -18,7 +18,7 @@ The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) do
 
 | Agent                         | Versions        | Status   |
 | ----------------------------- | --------------- | -------- |
-| [Claude Code](./claude-code/) | v2.0.76, v2.1.1 | Complete |
+| [Claude Code](./claude-code/) | v2.0.76, v2.1.1, v2.1.59 | Complete |
 
 ## Quick Start
 
@@ -27,12 +27,12 @@ The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) do
 ```bash
 # TypeScript
 npx json-schema-to-typescript \
-  claude-code/v2.1.1/session.schema.json \
+  claude-code/v2.1.59/session.schema.json \
   -o claude-code.d.ts
 
 # Python
 npx quicktype \
-  --src claude-code/v2.1.1/session.schema.json \
+  --src claude-code/v2.1.59/session.schema.json \
   --src-lang schema \
   --lang python \
   -o claude_code_types.py
@@ -62,7 +62,7 @@ import requests
 from jsonschema import Draft202012Validator
 
 # Fetch schema from GitHub
-schema_url = "https://raw.githubusercontent.com/moru-ai/agent-schemas/main/claude-code/v2.1.1/session.schema.json"
+schema_url = "https://raw.githubusercontent.com/moru-ai/agent-schemas/main/claude-code/v2.1.59/session.schema.json"
 schema = requests.get(schema_url).json()
 validator = Draft202012Validator(schema)
 
@@ -81,7 +81,7 @@ import Ajv from 'ajv';
 
 const ajv = new Ajv({ loadSchema: async uri => (await fetch(uri)).json() });
 const validate = await ajv.compileAsync({
-  $ref: 'https://raw.githubusercontent.com/moru-ai/agent-schemas/main/claude-code/v2.1.1/session.schema.json',
+  $ref: 'https://raw.githubusercontent.com/moru-ai/agent-schemas/main/claude-code/v2.1.59/session.schema.json',
 });
 
 const isValid = validate(messageData);
@@ -93,17 +93,18 @@ The schemas are **reverse-engineered** from actual session data, not official do
 
 ### Process
 
-1. **Data Collection**: Gathered ~50,000 messages across 480 session files from real Claude Code usage
-2. **Field Discovery**: Analyzed all unique fields, types, and patterns in the data
+1. **Data Collection**: Gathered session files from real Claude Code usage
+2. **Field Discovery**: Analyzed all unique fields, types, and patterns via parallel mining agents
 3. **Schema Writing**: Created JSON Schema Draft 2020-12 definitions covering all message types, tool inputs, and content blocks
-4. **Iterative Validation**: Ran validation against all session data, fixing schema issues until 100% pass rate
-5. **Version Differentiation**: Identified version-specific fields (e.g., `toolUseResult` in v2.1.1)
+4. **Iterative Validation**: Ran validation against all session data, fixing schema issues until 100% pass rate with zero undocumented fields
+5. **Version Differentiation**: Identified version-specific fields (e.g., `toolUseResult` in v2.1.1, `progress` messages in v2.1.2+)
 
 ### Validation Results
 
-| Agent       | Files | Messages | Pass Rate |
-| ----------- | ----- | -------- | --------- |
-| Claude Code | 480   | 52,057   | 100%      |
+| Agent       | Schema  | Files | Messages | Pass Rate |
+| ----------- | ------- | ----- | -------- | --------- |
+| Claude Code | v2.0.76 | 480   | 52,057   | 100%      |
+| Claude Code | v2.1.59 | 248+  | 51,025   | 100%      |
 
 ### Limitations
 
@@ -119,12 +120,14 @@ agent-schemas/
 ├── README.md                 # This file
 └── claude-code/
     ├── README.md             # Claude Code specific docs
-    ├── validate.py           # Validation script
+    ├── validate.py           # Validation script (auto-detects version)
     ├── history.schema.json   # ~/.claude/history.jsonl schema
     ├── v2.0.76/
-    │   └── session.schema.json
-    └── v2.1.1/
-        └── session.schema.json
+    │   └── session.schema.json   # CLI ≤ 2.0.x
+    ├── v2.1.1/
+    │   └── session.schema.json   # CLI 2.1.0–2.1.1
+    └── v2.1.59/
+        └── session.schema.json   # CLI 2.1.2–2.1.59+ (golden)
 ```
 
 ## Contributing
