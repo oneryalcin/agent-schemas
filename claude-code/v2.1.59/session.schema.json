@@ -107,7 +107,7 @@
       "properties": {
         "command": { "type": "string", "description": "The bash command to execute" },
         "description": { "type": "string", "description": "Short description of command purpose" },
-        "timeout": { "type": "integer", "minimum": 0, "maximum": 600000, "description": "Timeout in milliseconds" },
+        "timeout": { "type": "number", "minimum": 0, "maximum": 600000, "description": "Timeout in milliseconds" },
         "run_in_background": { "type": "boolean", "description": "Run command in background" },
         "dangerouslyDisableSandbox": { "type": "boolean", "description": "Disable sandbox mode" }
       },
@@ -219,7 +219,7 @@
           "enum": ["acceptEdits", "bypassPermissions", "default", "dontAsk", "plan"],
           "description": "Permission mode for spawned agent"
         },
-        "max_turns": { "type": "integer", "exclusiveMinimum": 0, "description": "Max agentic turns before stopping" },
+        "max_turns": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991, "description": "Max agentic turns before stopping" },
         "isolation": { "type": "string", "enum": ["worktree"], "description": "Isolation mode — worktree creates a temporary git worktree" }
       },
       "required": ["description", "prompt", "subagent_type"],
@@ -294,8 +294,15 @@
         },
         "annotations": {
           "type": "object",
-          "additionalProperties": { "type": "object" },
-          "description": "Per-question annotations (notes, markdown preview selections)"
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "markdown": { "type": "string", "description": "Markdown preview content of the selected option" },
+              "notes": { "type": "string", "description": "Free-text notes the user added to their selection" }
+            },
+            "additionalProperties": false
+          },
+          "description": "Per-question annotations keyed by question text"
         },
         "metadata": {
           "type": "object",
@@ -376,7 +383,7 @@
       "properties": {
         "task_id": { "type": "string", "description": "Task ID to get output from" },
         "block": { "type": "boolean", "default": true, "description": "Wait for completion" },
-        "timeout": { "type": "integer", "minimum": 0, "maximum": 600000, "description": "Max wait time in ms" }
+        "timeout": { "type": "number", "default": 30000, "minimum": 0, "maximum": 600000, "description": "Max wait time in ms" }
       },
       "required": ["task_id", "block", "timeout"],
       "additionalProperties": false
@@ -396,7 +403,7 @@
       "description": "Search for or select deferred tools to make them available. Use 'select:<tool_name>' for exact lookup or keywords for search.",
       "properties": {
         "query": { "type": "string", "description": "Keyword search or 'select:<tool_name>' for direct selection" },
-        "max_results": { "type": "integer", "default": 5, "minimum": 1, "description": "Maximum results to return" }
+        "max_results": { "type": "number", "default": 5, "minimum": 1, "description": "Maximum results to return" }
       },
       "required": ["query", "max_results"],
       "additionalProperties": false
