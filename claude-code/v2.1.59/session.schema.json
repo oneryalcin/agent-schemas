@@ -808,6 +808,7 @@
         },
         "isMeta": { "type": "boolean" },
         "isCompactSummary": { "type": "boolean", "description": "When true, content is summary string" },
+        "isVisibleInTranscriptOnly": { "type": "boolean", "description": "Message visible in transcript but not sent to model (v2.1.x+)" },
         "agentId": { "type": "string", "description": "Agent ID (in agent session files)" },
         "slug": { "type": "string", "description": "Human-readable session name" },
         "toolUseResult": {
@@ -955,6 +956,23 @@
             "preTokens": { "type": "integer" }
           },
           "description": "Compact metadata (compact_boundary)"
+        },
+        "teamName": { "type": "string", "description": "Team name when in team context (v2.1.x+)" },
+        "error": {
+          "type": "object",
+          "description": "Error details (api_error subtype). Contains cause object mirroring the top-level cause field.",
+          "properties": {
+            "cause": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string", "description": "Error code (e.g., ECONNRESET, ConnectionRefused, FailedToOpenSocket)" },
+                "path": { "type": "string", "description": "Request URL" },
+                "errno": { "type": "integer" }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
         },
         "url": {
           "type": "string",
@@ -1183,6 +1201,7 @@
         "isSidechain": { "type": "boolean" },
         "userType": { "type": "string", "const": "external" },
         "slug": { "type": "string", "description": "Human-readable session name (may be absent)" },
+        "agentId": { "type": "string", "description": "Agent ID (in subagent session files)" },
         "toolUseID": { "type": "string", "description": "Associated tool use ID" },
         "parentToolUseID": { "type": "string", "description": "Parent tool use ID (for nested tool calls)" },
         "data": { "$ref": "#/$defs/ProgressData" }
