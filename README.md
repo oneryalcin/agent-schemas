@@ -25,17 +25,28 @@ The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) do
 ### Generate Types
 
 ```bash
-# TypeScript
-npx json-schema-to-typescript \
-  claude-code/v2.1.59/session.schema.json \
-  -o claude-code.d.ts
+# Python (Pydantic v2) — recommended
+make python        # → generated/claude_code_types.py
 
-# Python
+# TypeScript
+make typescript    # → generated/claude_code_types.d.ts
+
+# Go / Rust (via quicktype)
+make go            # → generated/claude_code_types.go
+make rust          # → generated/claude_code_types.rs
+
+# All default targets (Python + TypeScript)
+make
+```
+
+Or manually with [quicktype](https://github.com/glideapps/quicktype) for other languages:
+
+```bash
 npx quicktype \
   --src claude-code/v2.1.59/session.schema.json \
   --src-lang schema \
-  --lang python \
-  -o claude_code_types.py
+  --lang <language> \
+  -o output_file
 ```
 
 ### Validate Session Files
