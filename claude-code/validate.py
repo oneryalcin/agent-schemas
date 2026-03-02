@@ -63,9 +63,9 @@ def detect_version(lines: list[dict]) -> Tuple[Optional[str], Optional[str]]:
                 continue
             if (major, minor, patch) < MIN_SUPPORTED_VERSION:
                 return None, version
-            if major >= 2 and minor >= 1 and patch >= 2:
+            if (major, minor, patch) >= (2, 1, 2):
                 return "2.1.59", version
-            if major >= 2 and minor >= 1:
+            if (major, minor) >= (2, 1):
                 return "2.1.1", version
             return "2.0.76", version
     # If no version found, check for progress messages (v2.1.2+)
