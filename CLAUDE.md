@@ -27,6 +27,8 @@ python claude-code/validate.py <directory> -v  # verbose
 - `v2.0.76/` → CLI ≤ 2.0.x
 - `v2.1.1/` → CLI 2.1.0–2.1.1 (adds `toolUseResult`, `sourceToolAssistantUUID`)
 - `v2.1.59/` → CLI 2.1.2+ (golden schema: `progress` messages, 12 new tools, `pr-link`, subagent support)
+- `v2.1.63/` → CLI 2.1.63 (Agent tool renamed from Task, microcompact_boundary)
+- `v2.1.72/` → CLI 2.1.64+ (agent-name/custom-title/last-prompt messages, compactMetadata, CronCreate/CronDelete/CronList, ExitWorktree, planContent, auto permission mode)
 
 Version auto-detection in `validate.py` uses the `version` field in session lines, falls back to presence of `progress` messages.
 

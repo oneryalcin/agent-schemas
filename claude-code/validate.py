@@ -28,6 +28,7 @@ SCHEMA_V2_0_76 = SCRIPT_DIR / "v2.0.76" / "session.schema.json"
 SCHEMA_V2_1_1 = SCRIPT_DIR / "v2.1.1" / "session.schema.json"
 SCHEMA_V2_1_59 = SCRIPT_DIR / "v2.1.59" / "session.schema.json"
 SCHEMA_V2_1_63 = SCRIPT_DIR / "v2.1.63" / "session.schema.json"
+SCHEMA_V2_1_72 = SCRIPT_DIR / "v2.1.72" / "session.schema.json"
 SCHEMA_HISTORY = SCRIPT_DIR / "history.schema.json"
 
 
@@ -50,7 +51,8 @@ def detect_version(lines: list[dict]) -> Tuple[Optional[str], Optional[str]]:
     """Detect CLI version from session lines.
 
     Returns (schema_key, raw_version):
-    - ("2.1.63", raw) for CLI >= 2.1.63
+    - ("2.1.72", raw) for CLI >= 2.1.64
+    - ("2.1.63", raw) for CLI 2.1.63
     - ("2.1.59", raw) for CLI 2.1.2-2.1.62
     - ("2.1.1", raw)  for CLI 2.1.0-2.1.1
     - ("2.0.76", raw)  for CLI 2.0.76-2.0.x
@@ -65,6 +67,8 @@ def detect_version(lines: list[dict]) -> Tuple[Optional[str], Optional[str]]:
                 continue
             if (major, minor, patch) < MIN_SUPPORTED_VERSION:
                 return None, version
+            if (major, minor, patch) >= (2, 1, 64):
+                return "2.1.72", version
             if (major, minor, patch) >= (2, 1, 63):
                 return "2.1.63", version
             if (major, minor, patch) >= (2, 1, 2):
@@ -81,6 +85,8 @@ def detect_version(lines: list[dict]) -> Tuple[Optional[str], Optional[str]]:
 
 def get_schema_for_version(version: str) -> dict:
     """Get the appropriate schema for a version."""
+    if version == "2.1.72":
+        return load_schema(SCHEMA_V2_1_72)
     if version == "2.1.63":
         return load_schema(SCHEMA_V2_1_63)
     if version == "2.1.59":

@@ -1,4 +1,4 @@
-SCHEMA    := claude-code/v2.1.59/session.schema.json
+SCHEMA    := claude-code/v2.1.72/session.schema.json
 OUTDIR    := generated
 
 # datamodel-codegen chokes on $id URLs — strip it for local generation
