@@ -20,6 +20,10 @@ make               # python + typescript
 python claude-code/validate.py ~/.claude/projects/<project-path>/
 python claude-code/validate.py <single-file>.jsonl
 python claude-code/validate.py <directory> -v  # verbose
+
+# Capture tool schemas + system prompt from live API
+python claude-code/capture_tools.py                # uses haiku, outputs to captured/
+python claude-code/capture_tools.py --model sonnet  # use sonnet
 ```
 
 ## Schema Version Mapping
@@ -38,9 +42,12 @@ Pure data repo — `jsonschema` for validation, `datamodel-code-generator`/`quic
 
 `validate.py` is the single entry point: reads JSONL → detects version → picks schema → validates each line via `Draft202012Validator`.
 
+`capture_tools.py` intercepts Claude API requests via a local proxy to extract canonical tool schemas and system prompt. Tool schemas are passed in the API `tools` parameter (not in JSONL session logs).
+
 ## Schema Conventions
 
 - `additionalProperties: true` everywhere for forward compatibility
+- Tool input schemas validated against canonical API definitions (via `capture_tools.py`)
 - Schemas describe observed data, not official spec
 - Each schema includes `$id`, `title`, `description`, `x-generated-date`
 - Version by CLI version, not schema revision

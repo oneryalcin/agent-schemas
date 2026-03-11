@@ -1,4 +1,5 @@
 generated/
+captured/
 __pycache__/
 *.pyc
 .venv/

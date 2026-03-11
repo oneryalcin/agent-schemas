@@ -19,9 +19,12 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 |------|-------------|
 | `v2.0.76/session.schema.json` | Session schema for CLI ≤ 2.0.x |
 | `v2.1.1/session.schema.json` | Session schema for CLI 2.1.0–2.1.1 |
-| `v2.1.59/session.schema.json` | Session schema for CLI 2.1.2–2.1.59+ |
+| `v2.1.59/session.schema.json` | Session schema for CLI 2.1.2–2.1.62 |
+| `v2.1.63/session.schema.json` | Session schema for CLI 2.1.63 |
+| `v2.1.72/session.schema.json` | Session schema for CLI 2.1.64+ |
 | `history.schema.json` | Schema for `~/.claude/history.jsonl` |
 | `validate.py` | Validation script (auto-detects version) |
+| `capture_tools.py` | Capture tool schemas + system prompt from API |
 
 ## Message Types
 
@@ -35,6 +38,9 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `queue-operation` | 2.0.x | Message queue operations |
 | `progress` | 2.1.2+ | Streaming progress events (~44% of JSONL lines) |
 | `pr-link` | 2.1.x | Pull request link record |
+| `agent-name` | 2.1.64+ | Agent/session display name |
+| `custom-title` | 2.1.64+ | Session title updates |
+| `last-prompt` | 2.1.64+ | Last user prompt for resumption |
 
 ## Version Differences
 
@@ -91,3 +97,28 @@ Requires: `pip install jsonschema`
 
 - v2.0.76 / v2.1.1: Original schema, tested against 52,057 messages across 480 session files (100% pass rate)
 - v2.1.59: Golden schema — validated against 51,025 JSONL lines (including subagent files) with 100% pass rate and zero undocumented fields. Mined from 248+ files across 2 days of real CLI 2.1.59 usage.
+- v2.1.63: Agent tool (renamed from Task), microcompact_boundary system subtype.
+- v2.1.72: Tool schemas validated against canonical API definitions captured via `capture_tools.py`. Validated 100% on 54 files / 19,657 lines (CLI 2.1.68–2.1.72).
+
+### v2.1.72 (covers 2.1.64+)
+
+**New message types:**
+- `agent-name` — session/agent display name assignment
+- `custom-title` — session title updates
+- `last-prompt` — last user prompt for session resumption
+
+**New built-in tools (4):**
+`CronCreate`, `CronDelete`, `CronList`, `ExitWorktree`
+
+**New fields on existing types:**
+- `SystemMessage`: `compactMetadata` (`{trigger, preTokens}`), `logicalParentUuid`
+- `UserMessage`: `planContent` (plan mode markdown)
+- `Agent` tool: `auto` permission mode; `subagent_type` now optional; `max_turns` removed
+- `ExitPlanMode` tool: restructured with `allowedPrompts` array
+- `ExitWorktree` tool: `action` (keep/remove), `discard_changes`
+
+### v2.1.63
+
+**Changes from v2.1.59:**
+- `Agent` tool added (renamed from `Task`)
+- `microcompact_boundary` system subtype

@@ -379,15 +379,15 @@
     },
     "TaskInput": {
       "type": "object",
-      "description": "Spawn a subagent or team member. New fields in v2.1.x: model, name, team_name, mode, max_turns, isolation.",
+      "description": "Spawn a subagent or team member.",
       "properties": {
         "description": {
           "type": "string",
-          "description": "Short task description (3-5 words)"
+          "description": "A short (3-5 word) description of the task"
         },
         "prompt": {
           "type": "string",
-          "description": "Task prompt for agent"
+          "description": "The task for the agent to perform"
         },
         "subagent_type": {
           "type": "string",
@@ -395,7 +395,7 @@
         },
         "run_in_background": {
           "type": "boolean",
-          "description": "Run agent in background"
+          "description": "Set to true to run this agent in the background. You will be notified when it completes."
         },
         "model": {
           "type": "string",
@@ -404,7 +404,7 @@
             "opus",
             "haiku"
           ],
-          "description": "Model override for subagent"
+          "description": "Optional model override for this agent. Takes precedence over the agent definition's model frontmatter. If omitted, uses the agent definition's model, or inherits from the parent."
         },
         "resume": {
           "type": "string",
@@ -412,11 +412,11 @@
         },
         "name": {
           "type": "string",
-          "description": "Named agent identifier (used with team_name for team members)"
+          "description": "Name for the spawned agent"
         },
         "team_name": {
           "type": "string",
-          "description": "Team to join (links to TeamCreate)"
+          "description": "Team name for spawning. Uses current team context if omitted."
         },
         "mode": {
           "type": "string",
@@ -428,13 +428,7 @@
             "plan",
             "auto"
           ],
-          "description": "Permission mode for spawned agent"
-        },
-        "max_turns": {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991,
-          "description": "Max agentic turns before stopping"
+          "description": "Permission mode for spawned teammate (e.g., \"plan\" to require plan approval)."
         },
         "isolation": {
           "type": "string",
@@ -669,19 +663,33 @@
     "ExitPlanModeInput": {
       "type": "object",
       "properties": {
-        "plan": {
-          "type": "string",
-          "description": "Plan content"
-        },
         "allowedPrompts": {
+          "description": "Prompt-based permissions needed to implement the plan. These describe categories of actions rather than specific commands.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/AllowedPrompt"
-          },
-          "description": "Prompt-based permissions needed to implement the plan"
+            "type": "object",
+            "properties": {
+              "tool": {
+                "description": "The tool this prompt applies to",
+                "type": "string",
+                "enum": [
+                  "Bash"
+                ]
+              },
+              "prompt": {
+                "description": "Semantic description of the action, e.g. \"run tests\", \"install dependencies\"",
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool",
+              "prompt"
+            ],
+            "additionalProperties": false
+          }
         }
       },
-      "additionalProperties": true
+      "additionalProperties": {}
     },
     "SkillInput": {
       "type": "object",
@@ -756,17 +764,16 @@
     },
     "ToolSearchInput": {
       "type": "object",
-      "description": "Search for or select deferred tools to make them available. Use 'select:<tool_name>' for exact lookup or keywords for search.",
+      "description": "Fetches full schema definitions for deferred tools so they can be called.",
       "properties": {
         "query": {
           "type": "string",
-          "description": "Keyword search or 'select:<tool_name>' for direct selection"
+          "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search."
         },
         "max_results": {
           "type": "number",
           "default": 5,
-          "minimum": 1,
-          "description": "Maximum results to return"
+          "description": "Maximum number of results to return (default: 5)"
         }
       },
       "required": [
@@ -2665,33 +2672,40 @@
     },
     "CronCreateInput": {
       "type": "object",
-      "description": "Create a recurring cron job",
+      "description": "Create a recurring cron job.",
       "properties": {
-        "schedule": {
-          "type": "string",
-          "description": "Cron schedule expression or interval (e.g. '5m', '1h')"
+        "cron": {
+          "description": "Standard 5-field cron expression in local time: \"M H DoM Mon DoW\" (e.g. \"*/5 * * * *\" = every 5 minutes).",
+          "type": "string"
         },
-        "command": {
-          "type": "string",
-          "description": "Command or skill to run"
+        "prompt": {
+          "description": "The prompt to enqueue at each fire time.",
+          "type": "string"
         },
-        "description": {
-          "type": "string",
-          "description": "Description of the cron job"
+        "recurring": {
+          "description": "true (default) = fire on every cron match until deleted or auto-expired after 3 days. false = fire once at the next match, then auto-delete.",
+          "type": "boolean"
         }
       },
-      "additionalProperties": true
+      "required": [
+        "cron",
+        "prompt"
+      ],
+      "additionalProperties": false
     },
     "CronDeleteInput": {
       "type": "object",
-      "description": "Delete a cron job",
+      "description": "Delete a cron job.",
       "properties": {
         "id": {
-          "type": "string",
-          "description": "Cron job ID to delete"
+          "description": "Job ID returned by CronCreate.",
+          "type": "string"
         }
       },
-      "additionalProperties": true
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
     },
     "CronListInput": {
       "type": "object",
@@ -2701,9 +2715,25 @@
     },
     "ExitWorktreeInput": {
       "type": "object",
-      "description": "Exit a git worktree isolation context",
-      "properties": {},
-      "additionalProperties": true
+      "description": "Exit a git worktree isolation context.",
+      "properties": {
+        "action": {
+          "description": "\"keep\" leaves the worktree and branch on disk; \"remove\" deletes both.",
+          "type": "string",
+          "enum": [
+            "keep",
+            "remove"
+          ]
+        },
+        "discard_changes": {
+          "description": "Required true when action is \"remove\" and the worktree has uncommitted files or unmerged commits. The tool will refuse and list them otherwise.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false
     }
   }
 }
