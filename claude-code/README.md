@@ -133,3 +133,8 @@ Claude Code implements a client-side version of Anthropic's [Tool Search](https:
 - **Deferred tools** (AskUserQuestion, CronCreate, etc.): listed by name in `<available-deferred-tools>`, schemas fetched on-demand via the `ToolSearch` tool which returns `tool_reference` content blocks
 
 The API also supports server-side tool search (`tool_search_tool_regex_20251119`, `tool_search_tool_bm25_20251119`) with `defer_loading: true` on tool definitions and `server_tool_use` / `tool_search_tool_result` response blocks. Claude Code uses its own client-side implementation instead, so these server-side block types do not appear in CLI session JSONL.
+
+Additional API-level features ([Advanced Tool Use](https://www.anthropic.com/engineering/advanced-tool-use), [Tool Search docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)) not currently observed in CLI sessions:
+- **Programmatic Tool Calling** (`code_execution_20250825`): Claude orchestrates tools via Python code; adds `allowed_callers` on tool defs, `caller.type: "code_execution_20250825"` on `tool_use` blocks, `server_tool_use` and `code_execution_tool_result` content blocks
+- **Tool Use Examples** (`input_examples`): Sample tool calls on tool definitions for teaching usage patterns
+- Our `ToolUseCaller` schema currently only documents `"type": "direct"` — if Claude Code adopts programmatic tool calling, the caller type enum will need updating
