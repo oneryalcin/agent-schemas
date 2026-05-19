@@ -29,6 +29,7 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `mine_binary.py` | Mine attachment subtypes + property shapes from the CLI binary |
 | `mine_tools.py` | Mine tool input schemas from the CLI binary (catches conditional tools that don't appear in the default capture) |
 | `drift_scan.py` | Detect undeclared keys in a JSONL corpus vs the schema's declared properties (use to discover new fields before each schema bump) |
+| [`ADDING_A_VERSION.md`](./ADDING_A_VERSION.md) | Runbook for cutting a new schema version when Claude Code ships a CLI that breaks the current one |
 
 ## Message Types
 
@@ -192,6 +193,12 @@ python claude-code/mine_binary.py --binary ~/.local/share/claude/versions/2.1.14
 Output is saved to `captured/binary_attachments_<ver>.json` for downstream tools.
 
 Limitations: minification preserves string literals and bareword property keys but mangles function/variable identifiers, so property shapes are key-only (no types). The reader/writer triangulation is best-effort — a subtype built via a helper function whose `A9()` call uses a variable instead of an object literal won't be detected as a writer site (8 of the 25 observation-derived subtypes fall into this bucket; they're still in the schema because the observation corpus saw them).
+
+## Cutting a New Schema Version
+
+When Claude Code ships a CLI whose JSONL the current schema no longer covers, follow [ADDING_A_VERSION.md](./ADDING_A_VERSION.md). The runbook walks through finding the version boundary, capturing tool schemas, mining the binary for canonical subtypes/conditional tools, scanning for drift, and the codegen + PR plumbing — derived from PRs #2, #6, #7, #8 which established this workflow.
+
+Most CLI releases **don't** need a new schema (`additionalProperties: true` keeps validation green when only new fields land). Bump only when validation breaks, a new top-level message `type` appears, or `drift_scan.py` reports significant drift.
 
 ## How Drift Detection Works
 
