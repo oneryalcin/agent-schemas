@@ -5,7 +5,7 @@
   "description": "Schema for Claude Code CLI session JSONL format. Each line in a .jsonl file should validate against this schema. Covers CLI versions 2.1.97 through 2.1.144.",
   "x-cli-version": "2.1.144",
   "x-generated-date": "2026-05-19",
-  "x-data-source": "Extended from v2.1.72. Initial subtypes derived from observation of 660 JSONL files spanning CLI 2.1.97-2.1.144. Subsequent pass via mine_binary.py extracted 13 additional attachment subtypes from the CLI 2.1.144 binary (~/.local/share/claude/versions/2.1.144) \u2014 these are canonical from the TypeScript source but not present in the observational corpus. Tool schemas validated against captured/tools_2.1.144.json. Third pass via mine_tools.py recovered 3 binary-only tool input schemas (PowerShell, RemoteTrigger, SendUserFile) that are platform-/environment-gated and don't appear in the macOS default tool capture.",
+  "x-data-source": "Extended from v2.1.72. Initial subtypes derived from observation of 660 JSONL files spanning CLI 2.1.97-2.1.144. Subsequent pass via mine_binary.py extracted 13 additional attachment subtypes from the CLI 2.1.144 binary (~/.local/share/claude/versions/2.1.144) \u2014 these are canonical from the TypeScript source but not present in the observational corpus. Tool schemas validated against captured/tools_2.1.144.json. Third pass via mine_tools.py recovered 3 binary-only tool input schemas (PowerShell, RemoteTrigger, SendUserFile) that are platform-/environment-gated and don't appear in the macOS default tool capture. Fourth pass via drift_scan.py surfaced and added: entrypoint on User/Assistant/SystemMessage; sessionKind on Attachment/SystemMessage; messageCount on SystemMessage; stop_details/diagnostics/context_management/container on assistant.message; displayPath on AttachmentFile and AttachmentNestedMemory.",
   "oneOf": [
     {
       "$ref": "#/$defs/UserMessage"
@@ -1875,6 +1875,10 @@
             }
           ],
           "description": "Parent UUID for sidechain messages."
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Where this session line was produced from (e.g. 'cli', 'sdk-py', 'sdk-cli', 'sdk-ts')."
         }
       },
       "required": [
@@ -1988,6 +1992,60 @@
             },
             "usage": {
               "$ref": "#/$defs/UsageInfo"
+            },
+            "stop_details": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ],
+              "description": "Structured stop-reason detail (object when present, null otherwise)."
+            },
+            "diagnostics": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cache_miss_reason": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              ],
+              "description": "Diagnostic metadata about how the model response was produced (cache miss reasons, etc.)."
+            },
+            "context_management": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ],
+              "description": "Context-management hints returned by the model."
+            },
+            "container": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ],
+              "description": "Container/sandbox metadata when the response was produced inside a managed runtime."
             }
           },
           "required": [
@@ -2086,6 +2144,10 @@
             }
           ],
           "description": "Parent UUID for sidechain messages."
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Where this session line was produced from (e.g. 'cli', 'sdk-py', 'sdk-cli', 'sdk-ts')."
         }
       },
       "required": [
@@ -2354,6 +2416,19 @@
           "type": "integer",
           "minimum": 0,
           "description": "Maximum retry attempts"
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Where this session line was produced from (e.g. 'cli', 'sdk-py', 'sdk-cli', 'sdk-ts')."
+        },
+        "sessionKind": {
+          "type": "string",
+          "description": "Session kind (e.g. 'background', 'subagent')."
+        },
+        "messageCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total message count up to this point (surfaced on turn_duration system messages)."
         }
       },
       "required": [
@@ -2919,6 +2994,10 @@
         },
         "sessionId": {
           "$ref": "#/$defs/UUID"
+        },
+        "leafUuid": {
+          "$ref": "#/$defs/UUID",
+          "description": "UUID of the leaf message that produced this last-prompt snapshot."
         }
       },
       "required": [
@@ -3850,6 +3929,10 @@
             }
           },
           "additionalProperties": true
+        },
+        "displayPath": {
+          "type": "string",
+          "description": "Display path (e.g. relative to cwd)."
         }
       },
       "required": [
@@ -3909,6 +3992,10 @@
             }
           },
           "additionalProperties": true
+        },
+        "displayPath": {
+          "type": "string",
+          "description": "Display path (e.g. relative to cwd)."
         }
       },
       "required": [
@@ -4240,6 +4327,10 @@
               "$ref": "#/$defs/AttachmentTaskStatus"
             }
           ]
+        },
+        "sessionKind": {
+          "type": "string",
+          "description": "Session kind (e.g. 'background', 'subagent')."
         }
       },
       "required": [

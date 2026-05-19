@@ -1688,6 +1688,10 @@
         "planContent": {
           "type": "string",
           "description": "Plan mode content (markdown plan text)"
+        },
+        "promptId": {
+          "type": "string",
+          "description": "Stable prompt identifier (v2.1.x+)."
         }
       },
       "required": [
@@ -1801,6 +1805,30 @@
             },
             "usage": {
               "$ref": "#/$defs/UsageInfo"
+            },
+            "container": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ],
+              "description": "Container/sandbox metadata when the response was produced inside a managed runtime."
+            },
+            "context_management": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              ],
+              "description": "Context-management hints returned by the model."
             }
           },
           "required": [
@@ -2661,6 +2689,10 @@
         },
         "sessionId": {
           "$ref": "#/$defs/UUID"
+        },
+        "leafUuid": {
+          "$ref": "#/$defs/UUID",
+          "description": "UUID of the leaf message that produced this last-prompt snapshot."
         }
       },
       "required": [
