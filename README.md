@@ -8,11 +8,13 @@ JSON Schema definitions for AI coding agent session formats.
 
 To build apps on top of coding agents, you need to parse and load their session messages.
 
-The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) doesn't yet provide programmatic access to session history or type definitions for the JSONL format ([#109](https://github.com/anthropics/claude-agent-sdk-python/issues/109)). This repo fills that gap with reverse-engineered JSON schemas, enabling:
+The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) now exposes session listing and retrieval (`list_sessions()`, `get_session_messages()`, `SessionStore`, etc., added in v0.1.46–v0.1.64), but the on-disk JSONL message shape is **deliberately treated as opaque**: the public `SessionStoreEntry` TypedDict only types `type`, `uuid`, and `timestamp`, with all other fields documented as "pass-through blobs". Anything beyond "read a message and hand it back" — discriminating tool uses, validating content blocks, generating typed models in another language — still requires the on-disk schema, which is not published.
 
-- Type-safe parsing for building UIs and tools
-- Session data validation
-- Type generation for any language
+This repo fills that gap with reverse-engineered JSON Schemas of the full JSONL format, enabling:
+
+- Type-safe parsing for building UIs and tools (typed message variants, content blocks, tool inputs)
+- Session data validation (catch schema drift across CLI versions)
+- Type generation for any language (Pydantic, TypeScript, Go, Rust via `make`)
 
 ## Supported Agents
 
