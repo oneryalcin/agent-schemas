@@ -1,0 +1,379 @@
+{
+  "binary": "/Users/mehmetoneryalcin/.local/share/claude/versions/2.1.144",
+  "schema_subtypes": [
+    "auto_mode",
+    "auto_mode_exit",
+    "budget_usd",
+    "command_permissions",
+    "compact_file_reference",
+    "date_change",
+    "deferred_tools_delta",
+    "directory",
+    "edited_text_file",
+    "file",
+    "goal_status",
+    "hook_blocking_error",
+    "hook_cancelled",
+    "hook_non_blocking_error",
+    "hook_success",
+    "invoked_skills",
+    "max_turns_reached",
+    "mcp_instructions_delta",
+    "nested_memory",
+    "output_style",
+    "plan_mode_exit",
+    "queued_command",
+    "skill_listing",
+    "task_reminder",
+    "todo_reminder"
+  ],
+  "reader_subtypes": [
+    "agent_mention",
+    "auto_mode",
+    "auto_mode_exit",
+    "date_change",
+    "edited_text_file",
+    "hook_additional_context",
+    "hook_blocking_error",
+    "hook_cancelled",
+    "hook_deferred_tool",
+    "hook_error_during_execution",
+    "hook_non_blocking_error",
+    "hook_permission_decision",
+    "hook_stopped_continuation",
+    "hook_success",
+    "hook_system_message",
+    "invoked_skills",
+    "max_turns_reached",
+    "plan_mode",
+    "plan_mode_exit",
+    "plan_mode_reentry",
+    "queued_command",
+    "relevant_memories",
+    "skill_listing",
+    "structured_output",
+    "task_reminder",
+    "task_status",
+    "todo_reminder"
+  ],
+  "writer_subtypes": [
+    "command_permissions",
+    "goal_status",
+    "hook_additional_context",
+    "hook_blocking_error",
+    "hook_cancelled",
+    "hook_deferred_tool",
+    "hook_error_during_execution",
+    "hook_non_blocking_error",
+    "hook_permission_decision",
+    "hook_stopped_continuation",
+    "hook_success",
+    "hook_system_message",
+    "invoked_skills",
+    "max_turns_reached",
+    "plan_file_reference",
+    "plan_mode",
+    "structured_output",
+    "task_status"
+  ],
+  "canonical_subtypes": [
+    "agent_mention",
+    "auto_mode",
+    "auto_mode_exit",
+    "budget_usd",
+    "command_permissions",
+    "compact_file_reference",
+    "date_change",
+    "deferred_tools_delta",
+    "directory",
+    "edited_text_file",
+    "file",
+    "goal_status",
+    "hook_additional_context",
+    "hook_blocking_error",
+    "hook_cancelled",
+    "hook_deferred_tool",
+    "hook_error_during_execution",
+    "hook_non_blocking_error",
+    "hook_permission_decision",
+    "hook_stopped_continuation",
+    "hook_success",
+    "hook_system_message",
+    "invoked_skills",
+    "max_turns_reached",
+    "mcp_instructions_delta",
+    "nested_memory",
+    "output_style",
+    "plan_file_reference",
+    "plan_mode",
+    "plan_mode_exit",
+    "plan_mode_reentry",
+    "queued_command",
+    "relevant_memories",
+    "skill_listing",
+    "structured_output",
+    "task_reminder",
+    "task_status",
+    "todo_reminder"
+  ],
+  "missing_from_schema": [
+    "agent_mention",
+    "hook_additional_context",
+    "hook_deferred_tool",
+    "hook_error_during_execution",
+    "hook_permission_decision",
+    "hook_stopped_continuation",
+    "hook_system_message",
+    "plan_file_reference",
+    "plan_mode",
+    "plan_mode_reentry",
+    "relevant_memories",
+    "structured_output",
+    "task_status"
+  ],
+  "properties": {
+    "agent_mention": [
+      "type",
+      "agentType"
+    ],
+    "auto_mode": [
+      "type",
+      "reminderType"
+    ],
+    "auto_mode_exit": [
+      "type"
+    ],
+    "budget_usd": [
+      "type",
+      "used",
+      "total",
+      "remaining"
+    ],
+    "command_permissions": [
+      "type",
+      "allowedTools",
+      "model"
+    ],
+    "compact_file_reference": [
+      "type",
+      "filename",
+      "displayPath"
+    ],
+    "date_change": [
+      "type",
+      "newDate"
+    ],
+    "deferred_tools_delta": [
+      "type"
+    ],
+    "directory": [
+      "type",
+      "path",
+      "content",
+      "displayPath"
+    ],
+    "edited_text_file": [
+      "type",
+      "filename",
+      "snippet"
+    ],
+    "file": [
+      "type",
+      "file",
+      "claudeChars",
+      "humanChars",
+      "percent",
+      "surface",
+      "filename",
+      "content",
+      "truncated",
+      "displayPath",
+      "displayText",
+      "description",
+      "path",
+      "score"
+    ],
+    "goal_status": [
+      "type",
+      "met",
+      "failed",
+      "condition",
+      "reason",
+      "iterations",
+      "durationMs",
+      "tokens",
+      "sentinel"
+    ],
+    "hook_additional_context": [
+      "type",
+      "content",
+      "hookName",
+      "toolUseID",
+      "hookEvent"
+    ],
+    "hook_blocking_error": [
+      "type",
+      "hookName",
+      "toolUseID",
+      "hookEvent",
+      "blockingError"
+    ],
+    "hook_cancelled": [
+      "type",
+      "hookName",
+      "toolUseID",
+      "hookEvent",
+      "command",
+      "durationMs"
+    ],
+    "hook_deferred_tool": [
+      "type",
+      "toolUseID",
+      "toolName",
+      "toolInput",
+      "hookName",
+      "hookEvent",
+      "permissionMode"
+    ],
+    "hook_error_during_execution": [
+      "type",
+      "hookName",
+      "toolUseID",
+      "hookEvent",
+      "content",
+      "command",
+      "durationMs"
+    ],
+    "hook_non_blocking_error": [
+      "type",
+      "hookName",
+      "toolUseID",
+      "hookEvent",
+      "stderr",
+      "stdout",
+      "exitCode",
+      "command",
+      "durationMs"
+    ],
+    "hook_permission_decision": [
+      "type",
+      "decision",
+      "toolUseID",
+      "hookEvent"
+    ],
+    "hook_stopped_continuation": [
+      "type",
+      "message",
+      "hookName",
+      "toolUseID",
+      "hookEvent"
+    ],
+    "hook_success": [
+      "type",
+      "hookName",
+      "toolUseID",
+      "hookEvent",
+      "content",
+      "stdout",
+      "stderr",
+      "exitCode",
+      "command",
+      "durationMs"
+    ],
+    "hook_system_message": [
+      "type",
+      "content",
+      "hookName",
+      "toolUseID",
+      "hookEvent"
+    ],
+    "invoked_skills": [
+      "type",
+      "skills"
+    ],
+    "max_turns_reached": [
+      "type",
+      "maxTurns",
+      "turnCount"
+    ],
+    "mcp_instructions_delta": [
+      "type"
+    ],
+    "nested_memory": [
+      "type",
+      "path",
+      "content",
+      "displayPath"
+    ],
+    "output_style": [
+      "type",
+      "style",
+      "turnReminder"
+    ],
+    "plan_file_reference": [
+      "type",
+      "planFilePath",
+      "planContent"
+    ],
+    "plan_mode": [
+      "type",
+      "reminderType",
+      "isSubAgent",
+      "planFilePath",
+      "planExists",
+      "customInstructions"
+    ],
+    "plan_mode_exit": [
+      "type",
+      "planFilePath",
+      "planExists"
+    ],
+    "plan_mode_reentry": [
+      "type",
+      "planFilePath"
+    ],
+    "queued_command": [
+      "type",
+      "prompt",
+      "source_uuid",
+      "imagePasteIds",
+      "fileAttachments",
+      "commandMode",
+      "origin",
+      "isMeta"
+    ],
+    "relevant_memories": [
+      "type",
+      "memories"
+    ],
+    "skill_listing": [
+      "type",
+      "content",
+      "skillCount",
+      "isInitial"
+    ],
+    "structured_output": [
+      "type",
+      "data"
+    ],
+    "task_reminder": [
+      "type",
+      "content",
+      "itemCount"
+    ],
+    "task_status": [
+      "type",
+      "taskId",
+      "taskType",
+      "status",
+      "description",
+      "deltaSummary",
+      "outputFilePath"
+    ],
+    "todo_reminder": [
+      "type",
+      "content",
+      "itemCount"
+    ]
+  }
+}

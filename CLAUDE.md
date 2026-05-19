@@ -24,6 +24,10 @@ python claude-code/validate.py <directory> -v  # verbose
 # Capture tool schemas + system prompt from live API
 python claude-code/capture_tools.py                # uses haiku, outputs to captured/
 python claude-code/capture_tools.py --model sonnet  # use sonnet
+
+# Mine attachment subtypes + property shapes from the CLI binary
+python claude-code/mine_binary.py                  # uses 2.1.144, outputs to captured/
+python claude-code/mine_binary.py --binary ~/.local/share/claude/versions/2.1.145
 ```
 
 ## Schema Version Mapping
@@ -33,7 +37,7 @@ python claude-code/capture_tools.py --model sonnet  # use sonnet
 - `v2.1.59/` → CLI 2.1.2+ (golden schema: `progress` messages, 12 new tools, `pr-link`, subagent support)
 - `v2.1.63/` → CLI 2.1.63 (Agent tool renamed from Task, microcompact_boundary)
 - `v2.1.72/` → CLI 2.1.64–2.1.96 (agent-name/custom-title/last-prompt messages, compactMetadata, CronCreate/CronDelete/CronList, ExitWorktree, planContent)
-- `v2.1.144/` → CLI 2.1.97+ (AttachmentMessage with 25 subtypes, permission-mode/ai-title/agent-setting/bridge-session/worktree-state top-level types, advisor server_tool_use & advisor_tool_result content blocks, Monitor/PushNotification/ScheduleWakeup/ShareOnboardingGuide/WaitForMcpServers tools, `auto` permission mode, away_summary/scheduled_task_fire/informational system subtypes)
+- `v2.1.144/` → CLI 2.1.97+ (AttachmentMessage with 38 subtypes — 25 observation-derived + 13 binary-mined from `~/.local/share/claude/versions/2.1.144`, permission-mode/ai-title/agent-setting/bridge-session/worktree-state top-level types, advisor server_tool_use & advisor_tool_result content blocks, Monitor/PushNotification/ScheduleWakeup/ShareOnboardingGuide/WaitForMcpServers tools, `auto` permission mode, away_summary/scheduled_task_fire/informational system subtypes)
 
 Version auto-detection in `validate.py` uses the `version` field in session lines, falls back to presence of `progress` messages.
 
@@ -44,6 +48,8 @@ Pure data repo — `jsonschema` for validation, `datamodel-code-generator`/`quic
 `validate.py` is the single entry point: reads JSONL → detects version → picks schema → validates each line via `Draft202012Validator`.
 
 `capture_tools.py` intercepts Claude API requests via a local proxy to extract canonical tool schemas and system prompt. Tool schemas are passed in the API `tools` parameter (not in JSONL session logs).
+
+`mine_binary.py` extracts attachment subtypes and their property keys from the Bun-compiled CLI binary by running `strings` over it and finding `A9()` wrapper call sites (writers), `attachment.type === "X"` comparisons (readers), and union'ing recovered keys from every `{type:"X", ...}` literal. Output is `captured/binary_attachments_<ver>.json`.
 
 ## Schema Conventions
 

@@ -5,7 +5,7 @@
   "description": "Schema for Claude Code CLI session JSONL format. Each line in a .jsonl file should validate against this schema. Covers CLI versions 2.1.97 through 2.1.144.",
   "x-cli-version": "2.1.144",
   "x-generated-date": "2026-05-19",
-  "x-data-source": "Extended from v2.1.72. Adds AttachmentMessage (25 subtypes), PermissionModeMessage, AITitleMessage, AgentSettingMessage, BridgeSessionMessage, WorktreeStateMessage, new SystemMessage subtypes (away_summary, scheduled_task_fire, informational), advisor content blocks (server_tool_use, advisor_tool_result), advisor_message iteration type, Monitor/PushNotification/ScheduleWakeup/ShareOnboardingGuide/WaitForMcpServers/RemoteTrigger tools, auto permission mode, plus origin/promptId/sessionKind/mcpMeta/agentId/slug/advisorModel/attribution* fields on user/assistant messages.",
+  "x-data-source": "Extended from v2.1.72. Initial subtypes derived from observation of 660 JSONL files spanning CLI 2.1.97-2.1.144. Subsequent pass via mine_binary.py extracted 13 additional attachment subtypes from the CLI 2.1.144 binary (~/.local/share/claude/versions/2.1.144) \u2014 these are canonical from the TypeScript source but not present in the observational corpus. Tool schemas validated against captured/tools_2.1.144.json.",
   "oneOf": [
     {
       "$ref": "#/$defs/UserMessage"
@@ -3342,6 +3342,10 @@
         "style": {
           "type": "string",
           "description": "Output style name (e.g. 'Explanatory')."
+        },
+        "turnReminder": {
+          "type": "boolean",
+          "description": "Whether this output-style record is a per-turn reminder rather than a one-shot style change."
         }
       },
       "required": [
@@ -3572,6 +3576,38 @@
         "commandMode": {
           "type": "string",
           "description": "How the queued prompt should be delivered (e.g. 'prompt')."
+        },
+        "source_uuid": {
+          "$ref": "#/$defs/UUID",
+          "description": "UUID of the message that queued this command."
+        },
+        "imagePasteIds": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "description": "IDs of images pasted alongside the queued prompt."
+        },
+        "fileAttachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "description": "File attachments queued with the prompt."
+        },
+        "origin": {
+          "$ref": "#/$defs/OriginInfo"
+        },
+        "isMeta": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -3948,6 +3984,29 @@
         "condition": {
           "type": "string",
           "description": "User-supplied goal/completion condition."
+        },
+        "failed": {
+          "type": "boolean",
+          "description": "Whether goal probing concluded the goal cannot be met."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Free-text explanation of the met/failed determination."
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many goal-probe iterations have run."
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cumulative time spent probing this goal."
+        },
+        "tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tokens consumed by goal-probe iterations."
         }
       },
       "required": [
@@ -4129,6 +4188,45 @@
             },
             {
               "$ref": "#/$defs/AttachmentMaxTurnsReached"
+            },
+            {
+              "$ref": "#/$defs/AttachmentAgentMention"
+            },
+            {
+              "$ref": "#/$defs/AttachmentHookAdditionalContext"
+            },
+            {
+              "$ref": "#/$defs/AttachmentHookDeferredTool"
+            },
+            {
+              "$ref": "#/$defs/AttachmentHookErrorDuringExecution"
+            },
+            {
+              "$ref": "#/$defs/AttachmentHookPermissionDecision"
+            },
+            {
+              "$ref": "#/$defs/AttachmentHookStoppedContinuation"
+            },
+            {
+              "$ref": "#/$defs/AttachmentHookSystemMessage"
+            },
+            {
+              "$ref": "#/$defs/AttachmentPlanFileReference"
+            },
+            {
+              "$ref": "#/$defs/AttachmentPlanMode"
+            },
+            {
+              "$ref": "#/$defs/AttachmentPlanModeReentry"
+            },
+            {
+              "$ref": "#/$defs/AttachmentRelevantMemories"
+            },
+            {
+              "$ref": "#/$defs/AttachmentStructuredOutput"
+            },
+            {
+              "$ref": "#/$defs/AttachmentTaskStatus"
             }
           ]
         }
@@ -4144,6 +4242,369 @@
         "isSidechain",
         "userType",
         "attachment"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentAgentMention": {
+      "type": "object",
+      "description": "@-mention of an agent name in user input. Binary-canonical (mined from CLI 2.1.144); not observed in 660-file corpus.",
+      "properties": {
+        "type": {
+          "const": "agent_mention"
+        },
+        "agentType": {
+          "type": "string",
+          "description": "Name/type of the mentioned agent."
+        }
+      },
+      "required": [
+        "type",
+        "agentType"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentHookAdditionalContext": {
+      "type": "object",
+      "description": "Extra context appended by a hook (SessionStart/Setup/SubagentStart/UserPromptExpansion/PostToolUse etc.). Hook returns context that becomes part of the next LLM turn. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "hook_additional_context"
+        },
+        "hookName": {
+          "type": "string"
+        },
+        "toolUseID": {
+          "type": "string"
+        },
+        "hookEvent": {
+          "type": "string",
+          "description": "Lifecycle event the hook fired on (e.g. 'SessionStart', 'PostToolUse')."
+        },
+        "content": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of additional context strings."
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "hookName",
+        "hookEvent"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentHookDeferredTool": {
+      "type": "object",
+      "description": "PreToolUse hook deferred the tool call (rather than allowing or blocking). The original tool invocation is preserved for re-execution. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "hook_deferred_tool"
+        },
+        "toolUseID": {
+          "type": "string"
+        },
+        "toolName": {
+          "type": "string",
+          "description": "Name of the tool whose invocation was deferred."
+        },
+        "toolInput": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Original tool input arguments."
+        },
+        "hookName": {
+          "type": "string"
+        },
+        "hookEvent": {
+          "type": "string"
+        },
+        "permissionMode": {
+          "type": "string",
+          "enum": [
+            "default",
+            "acceptEdits",
+            "bypassPermissions",
+            "dontAsk",
+            "plan",
+            "auto"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "toolUseID",
+        "toolName",
+        "hookName",
+        "hookEvent"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentHookErrorDuringExecution": {
+      "type": "object",
+      "description": "Hook threw or exited non-zero during its own execution (distinct from blocking/non-blocking errors, which are returns from a hook that ran successfully). Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "hook_error_during_execution"
+        },
+        "hookName": {
+          "type": "string"
+        },
+        "toolUseID": {
+          "type": "string"
+        },
+        "hookEvent": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "description": "Error message or stderr capture."
+        },
+        "command": {
+          "type": "string"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "hookName",
+        "hookEvent"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentHookPermissionDecision": {
+      "type": "object",
+      "description": "Permission-prompt hook decided allow/deny for a tool call. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "hook_permission_decision"
+        },
+        "decision": {
+          "type": "string",
+          "description": "Permission decision returned by the hook (e.g. 'allow', 'deny')."
+        },
+        "toolUseID": {
+          "type": "string"
+        },
+        "hookEvent": {
+          "type": "string",
+          "description": "Typically 'PermissionRequest'."
+        }
+      },
+      "required": [
+        "type",
+        "decision",
+        "toolUseID",
+        "hookEvent"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentHookStoppedContinuation": {
+      "type": "object",
+      "description": "PostToolUse hook signalled that the turn should not continue (e.g. stop reason). Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "hook_stopped_continuation"
+        },
+        "message": {
+          "type": "string",
+          "description": "Stop reason text fed back to the model."
+        },
+        "hookName": {
+          "type": "string"
+        },
+        "toolUseID": {
+          "type": "string"
+        },
+        "hookEvent": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "hookName",
+        "hookEvent"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentHookSystemMessage": {
+      "type": "object",
+      "description": "Hook emitted a synthetic system-message-style payload. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "hook_system_message"
+        },
+        "content": {
+          "type": "string"
+        },
+        "hookName": {
+          "type": "string"
+        },
+        "toolUseID": {
+          "type": "string"
+        },
+        "hookEvent": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "hookName",
+        "hookEvent"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentPlanFileReference": {
+      "type": "object",
+      "description": "Reference to an externalised plan file (used when the plan content is too large to inline). Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "plan_file_reference"
+        },
+        "planFilePath": {
+          "type": "string"
+        },
+        "planContent": {
+          "type": "string",
+          "description": "Plan content (markdown). May be omitted if the file is referenced rather than inlined."
+        }
+      },
+      "required": [
+        "type",
+        "planFilePath"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentPlanMode": {
+      "type": "object",
+      "description": "Plan-mode entry / reminder marker. Distinct from plan_mode_exit. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "plan_mode"
+        },
+        "reminderType": {
+          "type": "string",
+          "description": "Reminder kind (e.g. 'once', 'every-turn')."
+        },
+        "isSubAgent": {
+          "type": "boolean",
+          "description": "Whether plan mode is active in a subagent context."
+        },
+        "planFilePath": {
+          "type": "string"
+        },
+        "planExists": {
+          "type": "boolean"
+        },
+        "customInstructions": {
+          "type": "string",
+          "description": "User-provided custom plan-mode instructions."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentPlanModeReentry": {
+      "type": "object",
+      "description": "Re-entry into plan mode after a prior exit (e.g. /plan again on an existing plan file). Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "plan_mode_reentry"
+        },
+        "planFilePath": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentRelevantMemories": {
+      "type": "object",
+      "description": "Retrieved memory entries relevant to the current turn. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "relevant_memories"
+        },
+        "memories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "description": "Memory entries surfaced by retrieval."
+        }
+      },
+      "required": [
+        "type",
+        "memories"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentStructuredOutput": {
+      "type": "object",
+      "description": "Structured output payload from a tool or skill (e.g. JSON-typed result returned alongside the conversation). Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "structured_output"
+        },
+        "data": {
+          "description": "Structured payload. Shape depends on the producing tool/skill."
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "additionalProperties": true
+    },
+    "AttachmentTaskStatus": {
+      "type": "object",
+      "description": "Background-task lifecycle update. Surfaces task creation/update/completion in the transcript. Binary-canonical.",
+      "properties": {
+        "type": {
+          "const": "task_status"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "Task kind (e.g. 'bash', 'agent', 'monitor')."
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status (e.g. 'started', 'running', 'completed', 'failed')."
+        },
+        "description": {
+          "type": "string"
+        },
+        "deltaSummary": {
+          "type": "string",
+          "description": "Delta summary since last status update."
+        },
+        "outputFilePath": {
+          "type": "string",
+          "description": "Path to the captured output file for the task."
+        }
+      },
+      "required": [
+        "type",
+        "taskId"
       ],
       "additionalProperties": true
     }
