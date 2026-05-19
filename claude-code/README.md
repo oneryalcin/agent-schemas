@@ -26,6 +26,7 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `history.schema.json` | Schema for `~/.claude/history.jsonl` |
 | `validate.py` | Validation script (auto-detects version) |
 | `capture_tools.py` | Capture tool schemas + system prompt from API |
+| `mine_binary.py` | Mine attachment subtypes + property shapes from the CLI binary |
 
 ## Message Types
 
@@ -106,7 +107,8 @@ Requires: `pip install jsonschema`
 - v2.1.59: Golden schema — validated against 51,025 JSONL lines (including subagent files) with 100% pass rate and zero undocumented fields. Mined from 248+ files across 2 days of real CLI 2.1.59 usage.
 - v2.1.63: Agent tool (renamed from Task), microcompact_boundary system subtype.
 - v2.1.72: Tool schemas validated against canonical API definitions captured via `capture_tools.py`. Validated 100% on 54 files / 19,657 lines (CLI 2.1.68–2.1.72).
-- v2.1.144: Tool schemas re-aligned against canonical capture (drift in `Agent`, `CronCreate`, `CronList`, `EnterWorktree`, `Grep`, `SendMessage` since v2.1.72). Validated 100% on 660 files / 101,707 lines spanning CLI 2.1.97–2.1.144. The v2.1.72→v2.1.144 boundary is set at 2.1.97 because that is the earliest CLI version with observed schema-breaking session lines in our corpus; CLI 2.1.75–2.1.96 were not sampled and are routed to v2.1.72, which they should continue to satisfy.
+- v2.1.144: Tool schemas re-aligned against canonical capture (drift in `Agent`, `CronCreate`, `CronList`, `EnterWorktree`, `Grep`, `SendMessage` since v2.1.72). Validated 100% on 660 files / 102,488 lines spanning CLI 2.1.97–2.1.144. The v2.1.72→v2.1.144 boundary is set at 2.1.97 because that is the earliest CLI version with observed schema-breaking session lines in our corpus; CLI 2.1.75–2.1.96 were not sampled and are routed to v2.1.72, which they should continue to satisfy.
+- v2.1.144 (binary-mined pass): 13 additional attachment subtypes recovered from the CLI 2.1.144 binary via `mine_binary.py` — `agent_mention`, `hook_additional_context`, `hook_deferred_tool`, `hook_error_during_execution`, `hook_permission_decision`, `hook_stopped_continuation`, `hook_system_message`, `plan_file_reference`, `plan_mode` (distinct from `plan_mode_exit`), `plan_mode_reentry`, `relevant_memories`, `structured_output`, `task_status`. These do not appear in the 660-file observational corpus but are constructed via the `A9()` attachment wrapper in the bundled TypeScript source, so they are canonical even when unobserved.
 
 ### v2.1.72 (covers 2.1.64+)
 
@@ -128,10 +130,12 @@ Requires: `pip install jsonschema`
 ### v2.1.144 (covers 2.1.97+)
 
 **New message types:**
-- `attachment` — wrapper for 25 out-of-band context record subtypes (see below)
+- `attachment` — wrapper for 38 out-of-band context record subtypes (see below)
 - `permission-mode`, `ai-title`, `agent-setting`, `bridge-session`, `worktree-state`
 
-**Attachment subtypes:** `output_style`, `hook_success`, `hook_non_blocking_error`, `hook_blocking_error`, `hook_cancelled`, `task_reminder`, `todo_reminder`, `queued_command`, `deferred_tools_delta`, `mcp_instructions_delta`, `skill_listing`, `invoked_skills`, `edited_text_file`, `auto_mode`, `auto_mode_exit`, `plan_mode_exit`, `nested_memory`, `command_permissions`, `file`, `compact_file_reference`, `directory`, `date_change`, `goal_status`, `budget_usd`, `max_turns_reached`.
+**Attachment subtypes (observational, 25):** `output_style`, `hook_success`, `hook_non_blocking_error`, `hook_blocking_error`, `hook_cancelled`, `task_reminder`, `todo_reminder`, `queued_command`, `deferred_tools_delta`, `mcp_instructions_delta`, `skill_listing`, `invoked_skills`, `edited_text_file`, `auto_mode`, `auto_mode_exit`, `plan_mode_exit`, `nested_memory`, `command_permissions`, `file`, `compact_file_reference`, `directory`, `date_change`, `goal_status`, `budget_usd`, `max_turns_reached`.
+
+**Attachment subtypes (binary-canonical, 13):** `agent_mention`, `hook_additional_context`, `hook_deferred_tool`, `hook_error_during_execution`, `hook_permission_decision`, `hook_stopped_continuation`, `hook_system_message`, `plan_file_reference`, `plan_mode`, `plan_mode_reentry`, `relevant_memories`, `structured_output`, `task_status`.
 
 **New built-in tools (6):**
 `Monitor`, `PushNotification`, `ScheduleWakeup`, `ShareOnboardingGuide`, `WaitForMcpServers`, `RemoteTrigger`
@@ -153,6 +157,38 @@ Requires: `pip install jsonschema`
 **Changes from v2.1.59:**
 - `Agent` tool added (renamed from `Task`)
 - `microcompact_boundary` system subtype
+
+## How Binary Mining Works
+
+Claude Code 2.1.140+ ships as a Bun-compiled native binary (`~/.local/share/claude/versions/<ver>`). The JS source survives as printable strings — `strings <binary>` extracts ~24MB of bundled JavaScript with minified variable names but intact string literals.
+
+Every attachment line in a session JSONL is built via a single wrapper function:
+
+```js
+function A9(payload) {
+    return {attachment: payload, type: "attachment", uuid: ..., timestamp: ...};
+}
+```
+
+`mine_binary.py` triangulates the canonical attachment-subtype enum from three sources:
+
+1. **Writer sites:** `A9({type:"X", ...})` direct call sites — proves X is constructed.
+2. **Reader sites:** `attachment.type === "X"` comparisons — proves X is dispatched on.
+3. **Schema:** subtypes already documented in `v2.1.144/session.schema.json` from observation.
+
+The union is the canonical set. For each subtype, the script scans every `{type:"X", ...}` literal in the binary and unions the property keys it finds — recovering writer-side fields even when minification has mangled the surrounding code.
+
+Run:
+
+```bash
+python claude-code/mine_binary.py
+# Optional: target a specific binary
+python claude-code/mine_binary.py --binary ~/.local/share/claude/versions/2.1.145
+```
+
+Output is saved to `captured/binary_attachments_<ver>.json` for downstream tools.
+
+Limitations: minification preserves string literals and bareword property keys but mangles function/variable identifiers, so property shapes are key-only (no types). The reader/writer triangulation is best-effort — a subtype built via a helper function whose `A9()` call uses a variable instead of an object literal won't be detected as a writer site (8 of the 25 observation-derived subtypes fall into this bucket; they're still in the schema because the observation corpus saw them).
 
 ## How Tool Definitions Work
 
