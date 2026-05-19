@@ -28,6 +28,7 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `capture_tools.py` | Capture tool schemas + system prompt from API |
 | `mine_binary.py` | Mine attachment subtypes + property shapes from the CLI binary |
 | `mine_tools.py` | Mine tool input schemas from the CLI binary (catches conditional tools that don't appear in the default capture) |
+| `drift_scan.py` | Detect undeclared keys in a JSONL corpus vs the schema's declared properties (use to discover new fields before each schema bump) |
 
 ## Message Types
 
@@ -191,6 +192,27 @@ python claude-code/mine_binary.py --binary ~/.local/share/claude/versions/2.1.14
 Output is saved to `captured/binary_attachments_<ver>.json` for downstream tools.
 
 Limitations: minification preserves string literals and bareword property keys but mangles function/variable identifiers, so property shapes are key-only (no types). The reader/writer triangulation is best-effort — a subtype built via a helper function whose `A9()` call uses a variable instead of an object literal won't be detected as a writer site (8 of the 25 observation-derived subtypes fall into this bucket; they're still in the schema because the observation corpus saw them).
+
+## How Drift Detection Works
+
+The session schemas use `additionalProperties: true` on every message-wrapper `$def` for forward compatibility — a new CLI ships a new field and the validator stays green. The downside: codegen consumers drop the new field silently and never see it.
+
+`drift_scan.py` walks a JSONL corpus and reports every observed key the schema doesn't declare in `properties`:
+
+```bash
+python claude-code/drift_scan.py ~/.claude/projects/
+python claude-code/drift_scan.py session.jsonl
+python claude-code/drift_scan.py ~/.claude/projects/ --version 2.1.144   # force version
+python claude-code/drift_scan.py ~/.claude/projects/ --top 5             # only top 5 per bucket
+```
+
+Output groups findings by (schema version, message bucket), where a bucket is something like `user`, `assistant.message`, `attachment.hook_success`, `system[turn_duration]` — discriminated by both the top-level `type` and (when relevant) `attachment.type` or `system.subtype`. For each undeclared key it prints the count and an example `file:line`.
+
+Exit code is nonzero if any drift is found — usable as a CI tripwire against a current capture corpus.
+
+The script auto-detects the schema version per file using the same logic as `validate.py`. Lines below the minimum supported version are silently skipped.
+
+The first drift run against my corpus (103k lines across CLI 2.1.97-2.1.144) surfaced ~10 missing fields the observational PR #2 walk had missed: `entrypoint` on User/Assistant/SystemMessage; `sessionKind` on Attachment/SystemMessage; `messageCount` on `system[turn_duration]`; `stop_details`, `diagnostics`, `context_management`, `container` on `assistant.message`; `displayPath` on AttachmentFile/AttachmentNestedMemory; `leafUuid` on LastPromptMessage; `promptId` on the v2.1.72 UserMessage. All of these were added to the schema in the same PR that introduced `drift_scan.py`.
 
 ## How Tool Mining Works
 

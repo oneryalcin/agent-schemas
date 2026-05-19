@@ -31,6 +31,10 @@ python claude-code/mine_binary.py --binary ~/.local/share/claude/versions/2.1.14
 
 # Mine tool input schemas from the CLI binary (catches platform-conditional tools)
 python claude-code/mine_tools.py
+
+# Detect schema drift in a session corpus (use before each schema bump)
+python claude-code/drift_scan.py ~/.claude/projects/
+python claude-code/drift_scan.py ~/.claude/projects/ --top 5     # limit per bucket
 ```
 
 ## Schema Version Mapping
@@ -55,6 +59,8 @@ Pure data repo — `jsonschema` for validation, `datamodel-code-generator`/`quic
 `mine_binary.py` extracts attachment subtypes and their property keys from the Bun-compiled CLI binary by running `strings` over it and finding `A9()` wrapper call sites (writers), `attachment.type === "X"` comparisons (readers), and union'ing recovered keys from every `{type:"X", ...}` literal. Output is `captured/binary_attachments_<ver>.json`.
 
 `mine_tools.py` extracts tool input schemas from the binary by locating `P9({name:<var>, ...})` tool-registration calls, walking their `get inputSchema()` accessors through delegate/ternary patterns to the underlying `y.strictObject({...})` Zod schema, and translating the Zod chain to JSON Schema. Catches platform-conditional tools (PowerShell, SendUserFile, RemoteTrigger) that `capture_tools.py` skips because their `isEnabled()` returns false on the capture host. Output is `captured/binary_tools_<ver>.json`.
+
+`drift_scan.py` complements validation: where the validator passes on unknown fields (because `additionalProperties: true`), drift_scan reports any observed key not declared in the schema's `properties`. Discriminates by `(type, attachment.type, system.subtype)` buckets so drift on one subtype isn't conflated with another. Exit nonzero on any drift — usable as a CI tripwire.
 
 ## Schema Conventions
 
