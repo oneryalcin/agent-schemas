@@ -14,9 +14,11 @@ Requires: ANTHROPIC_API_KEY set in environment (or claude CLI configured).
 """
 
 import argparse
+import getpass
 import http.server
 import json
 import os
+import re
 import signal
 import ssl
 import subprocess
@@ -26,6 +28,33 @@ import urllib.request
 from pathlib import Path
 
 REAL_URL = "https://api.anthropic.com"
+
+
+def sanitize(obj):
+    """Strip local PII from captured tools/system blocks so they're safe to commit.
+
+    Claude Code's runtime-assembled system prompt embeds the current OS username
+    (in /Users/<user>/... paths) and git user.name. Replace both with placeholders
+    so check-in does not expose the capture host's identity.
+    """
+    user = getpass.getuser()
+    try:
+        git_name = subprocess.run(
+            ["git", "config", "--get", "user.name"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout.strip()
+    except Exception:
+        git_name = ""
+
+    raw = json.dumps(obj)
+    raw = raw.replace(f"/Users/{user}/", "/Users/<user>/")
+    raw = raw.replace(f"-Users-{user}-", "-Users-<user>-")
+    raw = raw.replace(user, "<user>")
+    if git_name:
+        raw = raw.replace(git_name, "<user>")
+    # Catch the most common other home shapes seen in the wild.
+    raw = re.sub(r"/home/[A-Za-z0-9._-]+/", "/home/<user>/", raw)
+    return json.loads(raw)
 
 
 class CaptureHandler(http.server.BaseHTTPRequestHandler):
@@ -136,11 +165,11 @@ def main():
     system_path = out / f"system_{cli_version}.json"
 
     with open(tools_path, "w") as f:
-        json.dump(CaptureHandler.tools, f, indent=2)
+        json.dump(sanitize(CaptureHandler.tools), f, indent=2)
         f.write("\n")
 
     with open(system_path, "w") as f:
-        json.dump(CaptureHandler.system, f, indent=2)
+        json.dump(sanitize(CaptureHandler.system), f, indent=2)
         f.write("\n")
 
     # Summary

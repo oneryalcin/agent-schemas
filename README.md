@@ -8,17 +8,19 @@ JSON Schema definitions for AI coding agent session formats.
 
 To build apps on top of coding agents, you need to parse and load their session messages.
 
-The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) doesn't yet provide programmatic access to session history or type definitions for the JSONL format ([#109](https://github.com/anthropics/claude-agent-sdk-python/issues/109)). This repo fills that gap with reverse-engineered JSON schemas, enabling:
+The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) now exposes session listing and retrieval (`list_sessions()`, `get_session_messages()`, `SessionStore`, etc., added in v0.1.46–v0.1.64), but the on-disk JSONL message shape is **deliberately treated as opaque**: the public `SessionStoreEntry` TypedDict only types `type`, `uuid`, and `timestamp`, with all other fields documented as "pass-through blobs". Anything beyond "read a message and hand it back" — discriminating tool uses, validating content blocks, generating typed models in another language — still requires the on-disk schema, which is not published.
 
-- Type-safe parsing for building UIs and tools
-- Session data validation
-- Type generation for any language
+This repo fills that gap with reverse-engineered JSON Schemas of the full JSONL format, enabling:
+
+- Type-safe parsing for building UIs and tools (typed message variants, content blocks, tool inputs)
+- Session data validation (catch schema drift across CLI versions)
+- Type generation for any language (Pydantic, TypeScript, Go, Rust via `make`)
 
 ## Supported Agents
 
 | Agent                         | Versions        | Status   |
 | ----------------------------- | --------------- | -------- |
-| [Claude Code](./claude-code/) | v2.0.76, v2.1.1, v2.1.59 | Complete |
+| [Claude Code](./claude-code/) | v2.0.76, v2.1.1, v2.1.59, v2.1.63, v2.1.72, v2.1.144 | Complete |
 
 ## Quick Start
 
@@ -112,10 +114,12 @@ The schemas are **reverse-engineered** from actual session data, not official do
 
 ### Validation Results
 
-| Agent       | Schema  | Files | Messages | Pass Rate |
-| ----------- | ------- | ----- | -------- | --------- |
-| Claude Code | v2.0.76 | 480   | 52,057   | 100%      |
-| Claude Code | v2.1.59 | 248+  | 51,025   | 100%      |
+| Agent       | Schema   | Files | Messages | Pass Rate |
+| ----------- | -------- | ----- | -------- | --------- |
+| Claude Code | v2.0.76  | 480   | 52,057   | 100%      |
+| Claude Code | v2.1.59  | 248+  | 51,025   | 100%      |
+| Claude Code | v2.1.72  | 54    | 19,657   | 100%      |
+| Claude Code | v2.1.144 | 660   | 101,652  | 100%      |
 
 ### Limitations
 
@@ -137,8 +141,14 @@ agent-schemas/
     │   └── session.schema.json   # CLI ≤ 2.0.x
     ├── v2.1.1/
     │   └── session.schema.json   # CLI 2.1.0–2.1.1
-    └── v2.1.59/
-        └── session.schema.json   # CLI 2.1.2–2.1.59+ (golden)
+    ├── v2.1.59/
+    │   └── session.schema.json   # CLI 2.1.2–2.1.62
+    ├── v2.1.63/
+    │   └── session.schema.json   # CLI 2.1.63
+    ├── v2.1.72/
+    │   └── session.schema.json   # CLI 2.1.64–2.1.96
+    └── v2.1.144/
+        └── session.schema.json   # CLI 2.1.97+ (current)
 ```
 
 ## Contributing

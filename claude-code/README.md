@@ -21,7 +21,8 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `v2.1.1/session.schema.json` | Session schema for CLI 2.1.0–2.1.1 |
 | `v2.1.59/session.schema.json` | Session schema for CLI 2.1.2–2.1.62 |
 | `v2.1.63/session.schema.json` | Session schema for CLI 2.1.63 |
-| `v2.1.72/session.schema.json` | Session schema for CLI 2.1.64+ |
+| `v2.1.72/session.schema.json` | Session schema for CLI 2.1.64–2.1.96 |
+| `v2.1.144/session.schema.json` | Session schema for CLI 2.1.97+ |
 | `history.schema.json` | Schema for `~/.claude/history.jsonl` |
 | `validate.py` | Validation script (auto-detects version) |
 | `capture_tools.py` | Capture tool schemas + system prompt from API |
@@ -41,6 +42,12 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `agent-name` | 2.1.64+ | Agent/session display name |
 | `custom-title` | 2.1.64+ | Session title updates |
 | `last-prompt` | 2.1.64+ | Last user prompt for resumption |
+| `attachment` | 2.1.97+ | Out-of-band context records (25 subtypes: hook results, file/dir mounts, queued commands, plan-mode/auto-mode toggles, deferred-tools deltas, skill listings, goal status, budget, etc.) |
+| `permission-mode` | 2.1.97+ | Permission-mode change record (`auto` mode added here) |
+| `ai-title` | 2.1.97+ | AI-generated session title |
+| `agent-setting` | 2.1.97+ | Active agent setting for the session |
+| `bridge-session` | 2.1.97+ | Linkage to a remote-control bridge session |
+| `worktree-state` | 2.1.97+ | Worktree session metadata (`--worktree`/EnterWorktree) |
 
 ## Version Differences
 
@@ -99,6 +106,7 @@ Requires: `pip install jsonschema`
 - v2.1.59: Golden schema — validated against 51,025 JSONL lines (including subagent files) with 100% pass rate and zero undocumented fields. Mined from 248+ files across 2 days of real CLI 2.1.59 usage.
 - v2.1.63: Agent tool (renamed from Task), microcompact_boundary system subtype.
 - v2.1.72: Tool schemas validated against canonical API definitions captured via `capture_tools.py`. Validated 100% on 54 files / 19,657 lines (CLI 2.1.68–2.1.72).
+- v2.1.144: Tool schemas re-aligned against canonical capture (drift in `Agent`, `CronCreate`, `CronList`, `EnterWorktree`, `Grep`, `SendMessage` since v2.1.72). Validated 100% on 660 files / 101,707 lines spanning CLI 2.1.97–2.1.144. The v2.1.72→v2.1.144 boundary is set at 2.1.97 because that is the earliest CLI version with observed schema-breaking session lines in our corpus; CLI 2.1.75–2.1.96 were not sampled and are routed to v2.1.72, which they should continue to satisfy.
 
 ### v2.1.72 (covers 2.1.64+)
 
@@ -116,6 +124,29 @@ Requires: `pip install jsonschema`
 - `Agent` tool: `auto` permission mode; `subagent_type` now optional; `max_turns` removed
 - `ExitPlanMode` tool: restructured with `allowedPrompts` array
 - `ExitWorktree` tool: `action` (keep/remove), `discard_changes`
+
+### v2.1.144 (covers 2.1.97+)
+
+**New message types:**
+- `attachment` — wrapper for 25 out-of-band context record subtypes (see below)
+- `permission-mode`, `ai-title`, `agent-setting`, `bridge-session`, `worktree-state`
+
+**Attachment subtypes:** `output_style`, `hook_success`, `hook_non_blocking_error`, `hook_blocking_error`, `hook_cancelled`, `task_reminder`, `todo_reminder`, `queued_command`, `deferred_tools_delta`, `mcp_instructions_delta`, `skill_listing`, `invoked_skills`, `edited_text_file`, `auto_mode`, `auto_mode_exit`, `plan_mode_exit`, `nested_memory`, `command_permissions`, `file`, `compact_file_reference`, `directory`, `date_change`, `goal_status`, `budget_usd`, `max_turns_reached`.
+
+**New built-in tools (6):**
+`Monitor`, `PushNotification`, `ScheduleWakeup`, `ShareOnboardingGuide`, `WaitForMcpServers`, `RemoteTrigger`
+
+**New content blocks:**
+- `server_tool_use` — server-side tool invocation (advisor, etc.)
+- `advisor_tool_result` — advisor result, paired with `server_tool_use`
+
+**New fields on existing types:**
+- `UserMessage`: `auto` permission mode, `origin` (`{kind: "task-notification"|"channel"}`), `promptId`, `sessionKind`, `mcpMeta`, `sourceToolUseID`, `sidechainParentUuid`
+- `AssistantMessage`: `advisorModel`, `attributionAgent/Plugin/Skill`, `error` (string|object), `errorDetails` (string|object), `apiErrorStatus`, `origin`, `agentId`, `slug`, `sessionKind`, `sidechainParentUuid`
+- `SystemMessage.subtype`: adds `away_summary`, `scheduled_task_fire`, `informational`; `level` adds `"warning"`
+- `UsageInfo.iterations[]`: typed entries (`type: "message" | "advisor_message"`); advisor entries include `model`
+- `MCPToolName` pattern: trailing `__<tool>` segment is now optional (model occasionally hallucinates `mcp__<server>` alone)
+- `ToolResultContentItem`: switched `oneOf` → `anyOf` to accept MCP resource descriptors alongside structured shapes
 
 ### v2.1.63
 
