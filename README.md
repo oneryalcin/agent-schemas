@@ -18,7 +18,7 @@ The [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) do
 
 | Agent                         | Versions        | Status   |
 | ----------------------------- | --------------- | -------- |
-| [Claude Code](./claude-code/) | v2.0.76, v2.1.1, v2.1.59 | Complete |
+| [Claude Code](./claude-code/) | v2.0.76, v2.1.1, v2.1.59, v2.1.63, v2.1.72, v2.1.144 | Complete |
 
 ## Quick Start
 
@@ -112,10 +112,12 @@ The schemas are **reverse-engineered** from actual session data, not official do
 
 ### Validation Results
 
-| Agent       | Schema  | Files | Messages | Pass Rate |
-| ----------- | ------- | ----- | -------- | --------- |
-| Claude Code | v2.0.76 | 480   | 52,057   | 100%      |
-| Claude Code | v2.1.59 | 248+  | 51,025   | 100%      |
+| Agent       | Schema   | Files | Messages | Pass Rate |
+| ----------- | -------- | ----- | -------- | --------- |
+| Claude Code | v2.0.76  | 480   | 52,057   | 100%      |
+| Claude Code | v2.1.59  | 248+  | 51,025   | 100%      |
+| Claude Code | v2.1.72  | 54    | 19,657   | 100%      |
+| Claude Code | v2.1.144 | 660   | 101,652  | 100%      |
 
 ### Limitations
 
@@ -137,8 +139,14 @@ agent-schemas/
     │   └── session.schema.json   # CLI ≤ 2.0.x
     ├── v2.1.1/
     │   └── session.schema.json   # CLI 2.1.0–2.1.1
-    └── v2.1.59/
-        └── session.schema.json   # CLI 2.1.2–2.1.59+ (golden)
+    ├── v2.1.59/
+    │   └── session.schema.json   # CLI 2.1.2–2.1.62
+    ├── v2.1.63/
+    │   └── session.schema.json   # CLI 2.1.63
+    ├── v2.1.72/
+    │   └── session.schema.json   # CLI 2.1.64–2.1.96
+    └── v2.1.144/
+        └── session.schema.json   # CLI 2.1.97+ (current)
 ```
 
 ## Contributing

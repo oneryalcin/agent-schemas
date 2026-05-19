@@ -32,7 +32,8 @@ python claude-code/capture_tools.py --model sonnet  # use sonnet
 - `v2.1.1/` → CLI 2.1.0–2.1.1 (adds `toolUseResult`, `sourceToolAssistantUUID`)
 - `v2.1.59/` → CLI 2.1.2+ (golden schema: `progress` messages, 12 new tools, `pr-link`, subagent support)
 - `v2.1.63/` → CLI 2.1.63 (Agent tool renamed from Task, microcompact_boundary)
-- `v2.1.72/` → CLI 2.1.64+ (agent-name/custom-title/last-prompt messages, compactMetadata, CronCreate/CronDelete/CronList, ExitWorktree, planContent, auto permission mode)
+- `v2.1.72/` → CLI 2.1.64–2.1.96 (agent-name/custom-title/last-prompt messages, compactMetadata, CronCreate/CronDelete/CronList, ExitWorktree, planContent)
+- `v2.1.144/` → CLI 2.1.97+ (AttachmentMessage with 25 subtypes, permission-mode/ai-title/agent-setting/bridge-session/worktree-state top-level types, advisor server_tool_use & advisor_tool_result content blocks, Monitor/PushNotification/ScheduleWakeup/ShareOnboardingGuide/WaitForMcpServers tools, `auto` permission mode, away_summary/scheduled_task_fire/informational system subtypes)
 
 Version auto-detection in `validate.py` uses the `version` field in session lines, falls back to presence of `progress` messages.
 
