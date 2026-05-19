@@ -27,6 +27,7 @@ The `<project-path>` is the absolute path with `/` replaced by `-`:
 | `validate.py` | Validation script (auto-detects version) |
 | `capture_tools.py` | Capture tool schemas + system prompt from API |
 | `mine_binary.py` | Mine attachment subtypes + property shapes from the CLI binary |
+| `mine_tools.py` | Mine tool input schemas from the CLI binary (catches conditional tools that don't appear in the default capture) |
 
 ## Message Types
 
@@ -109,6 +110,7 @@ Requires: `pip install jsonschema`
 - v2.1.72: Tool schemas validated against canonical API definitions captured via `capture_tools.py`. Validated 100% on 54 files / 19,657 lines (CLI 2.1.68–2.1.72).
 - v2.1.144: Tool schemas re-aligned against canonical capture (drift in `Agent`, `CronCreate`, `CronList`, `EnterWorktree`, `Grep`, `SendMessage` since v2.1.72). Validated 100% on 660 files / 102,488 lines spanning CLI 2.1.97–2.1.144. The v2.1.72→v2.1.144 boundary is set at 2.1.97 because that is the earliest CLI version with observed schema-breaking session lines in our corpus; CLI 2.1.75–2.1.96 were not sampled and are routed to v2.1.72, which they should continue to satisfy.
 - v2.1.144 (binary-mined pass): 13 additional attachment subtypes recovered from the CLI 2.1.144 binary via `mine_binary.py` — `agent_mention`, `hook_additional_context`, `hook_deferred_tool`, `hook_error_during_execution`, `hook_permission_decision`, `hook_stopped_continuation`, `hook_system_message`, `plan_file_reference`, `plan_mode` (distinct from `plan_mode_exit`), `plan_mode_reentry`, `relevant_memories`, `structured_output`, `task_status`. These do not appear in the 660-file observational corpus but are constructed via the `A9()` attachment wrapper in the bundled TypeScript source, so they are canonical even when unobserved.
+- v2.1.144 (tool-mining pass): 3 conditionally-enabled tools recovered via `mine_tools.py` — `PowerShell` (Windows-only / `CLAUDE_CODE_USE_POWERSHELL_TOOL=1`), `RemoteTrigger` (claude.ai bridge / `tengu_surreal_dali` flag), `SendUserFile` (remote-environment sessions). These never appear in a macOS no-remote default capture; their canonical Zod schemas were extracted from the binary's tool-registration call sites.
 
 ### v2.1.72 (covers 2.1.64+)
 
@@ -137,8 +139,8 @@ Requires: `pip install jsonschema`
 
 **Attachment subtypes (binary-canonical, 13):** `agent_mention`, `hook_additional_context`, `hook_deferred_tool`, `hook_error_during_execution`, `hook_permission_decision`, `hook_stopped_continuation`, `hook_system_message`, `plan_file_reference`, `plan_mode`, `plan_mode_reentry`, `relevant_memories`, `structured_output`, `task_status`.
 
-**New built-in tools (6):**
-`Monitor`, `PushNotification`, `ScheduleWakeup`, `ShareOnboardingGuide`, `WaitForMcpServers`, `RemoteTrigger`
+**New built-in tools (9):**
+`Monitor`, `PushNotification`, `ScheduleWakeup`, `ShareOnboardingGuide`, `WaitForMcpServers`, `RemoteTrigger`, `PowerShell`, `SendUserFile` — the latter three were added via `mine_tools.py` after PR #2/#6 because they're conditionally enabled and absent from default captures.
 
 **New content blocks:**
 - `server_tool_use` — server-side tool invocation (advisor, etc.)
@@ -189,6 +191,28 @@ python claude-code/mine_binary.py --binary ~/.local/share/claude/versions/2.1.14
 Output is saved to `captured/binary_attachments_<ver>.json` for downstream tools.
 
 Limitations: minification preserves string literals and bareword property keys but mangles function/variable identifiers, so property shapes are key-only (no types). The reader/writer triangulation is best-effort — a subtype built via a helper function whose `A9()` call uses a variable instead of an object literal won't be detected as a writer site (8 of the 25 observation-derived subtypes fall into this bucket; they're still in the schema because the observation corpus saw them).
+
+## How Tool Mining Works
+
+`capture_tools.py` only captures tools whose `isEnabled()` returns true under the capture host's environment. On macOS without remote control or claude.ai bridge, the `PowerShell` / `SendUserFile` / `RemoteTrigger` tools are skipped — they ship in the binary but never make it into the API request body.
+
+`mine_tools.py` recovers them by:
+
+1. Running `strings` on the binary to extract the bundled JS.
+2. Finding every `<var>="<ToolName>"` constant assignment to build a name → minified-var map.
+3. Finding each `P9({name:<var>, ...})` tool-registration call.
+4. Extracting the `get inputSchema(){return <fn>()}` accessor and walking it through delegate / ternary patterns to the underlying `y.strictObject({...})` Zod schema.
+5. Translating the Zod chain to JSON Schema (primitive types, enums, arrays, min/max, defaults, regex patterns, optional-ness).
+
+The script is fail-soft: when a Zod expression is too tangled, it skips that tool rather than emitting an incorrect schema. In CLI 2.1.144 it recovers 30 of 39 mapped tools (failures are mostly tools with no `get inputSchema()` accessor — they use a different registration shape).
+
+Run:
+
+```bash
+python claude-code/mine_tools.py
+# Outputs captured/binary_tools_<ver>.json with the schemas of every recovered tool
+# and a `binary_only_tools` list of the ones missing from the live capture.
+```
 
 ## How Tool Definitions Work
 

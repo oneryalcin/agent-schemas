@@ -5,7 +5,7 @@
   "description": "Schema for Claude Code CLI session JSONL format. Each line in a .jsonl file should validate against this schema. Covers CLI versions 2.1.97 through 2.1.144.",
   "x-cli-version": "2.1.144",
   "x-generated-date": "2026-05-19",
-  "x-data-source": "Extended from v2.1.72. Initial subtypes derived from observation of 660 JSONL files spanning CLI 2.1.97-2.1.144. Subsequent pass via mine_binary.py extracted 13 additional attachment subtypes from the CLI 2.1.144 binary (~/.local/share/claude/versions/2.1.144) \u2014 these are canonical from the TypeScript source but not present in the observational corpus. Tool schemas validated against captured/tools_2.1.144.json.",
+  "x-data-source": "Extended from v2.1.72. Initial subtypes derived from observation of 660 JSONL files spanning CLI 2.1.97-2.1.144. Subsequent pass via mine_binary.py extracted 13 additional attachment subtypes from the CLI 2.1.144 binary (~/.local/share/claude/versions/2.1.144) \u2014 these are canonical from the TypeScript source but not present in the observational corpus. Tool schemas validated against captured/tools_2.1.144.json. Third pass via mine_tools.py recovered 3 binary-only tool input schemas (PowerShell, RemoteTrigger, SendUserFile) that are platform-/environment-gated and don't appear in the macOS default tool capture.",
   "oneOf": [
     {
       "$ref": "#/$defs/UserMessage"
@@ -142,9 +142,11 @@
         "ScheduleWakeup",
         "ShareOnboardingGuide",
         "WaitForMcpServers",
-        "RemoteTrigger"
+        "RemoteTrigger",
+        "PowerShell",
+        "SendUserFile"
       ],
-      "description": "Built-in tool name. Includes lowercase \"bash\" (observed Haiku model variant). Monitor/PushNotification/ScheduleWakeup/ShareOnboardingGuide/WaitForMcpServers/RemoteTrigger added in v2.1.97+ (Monitor in 2.1.98, PushNotification in 2.1.110, RemoteTrigger via MCP bridge)."
+      "description": "Built-in tool name. Includes lowercase \"bash\" (observed Haiku model variant). PowerShell/SendUserFile/RemoteTrigger are conditionally enabled (Windows-only / remote-environment / claude.ai-bridge respectively) and absent from the macOS no-remote default capture, but are documented here from binary mining (see mine_tools.py)."
     },
     "MCPToolName": {
       "type": "string",
@@ -1202,6 +1204,15 @@
         },
         {
           "$ref": "#/$defs/WaitForMcpServersInput"
+        },
+        {
+          "$ref": "#/$defs/PowerShellInput"
+        },
+        {
+          "$ref": "#/$defs/RemoteTriggerInput"
+        },
+        {
+          "$ref": "#/$defs/SendUserFileInput"
         }
       ]
     },
@@ -4607,6 +4618,96 @@
         "taskId"
       ],
       "additionalProperties": true
+    },
+    "PowerShellInput": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "The PowerShell command to execute",
+          "type": "string"
+        },
+        "timeout": {
+          "type": "number"
+        },
+        "description": {
+          "description": "Clear, concise description of what this command does in active voice.",
+          "type": "string"
+        },
+        "run_in_background": {
+          "description": "Set to true to run this command in the background.",
+          "type": "boolean"
+        },
+        "dangerouslyDisableSandbox": {
+          "description": "Set this to true to dangerously override sandbox mode and run commands without sandboxing.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "additionalProperties": false,
+      "description": "Execute Windows PowerShell commands. Conditionally enabled \u2014 only loaded when running on Windows or when CLAUDE_CODE_USE_POWERSHELL_TOOL=1."
+    },
+    "RemoteTriggerInput": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "list",
+            "get",
+            "create",
+            "update",
+            "run"
+          ]
+        },
+        "trigger_id": {
+          "description": "Required for get, update, and run",
+          "type": "string",
+          "pattern": "^[\\w-]+$"
+        },
+        "body": {
+          "description": "Required for create and update; optional for run",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false,
+      "description": "Manage scheduled remote Claude Code agents (routines) via the claude.ai CCR API. Conditionally enabled \u2014 requires claude.ai bridge / OAuth / `tengu_surreal_dali` feature flag."
+    },
+    "SendUserFileInput": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "File paths (absolute or relative to cwd) to send to the user.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "caption": {
+          "description": "Optional short caption for the file(s).",
+          "type": "string"
+        },
+        "status": {
+          "description": "Use 'proactive' when you're surfacing a file the user hasn't asked for and needs to see now \u2014 a generated artifact, a completed report. Use 'normal' when replying to something the user just said.",
+          "type": "string",
+          "enum": [
+            "normal",
+            "proactive"
+          ]
+        }
+      },
+      "required": [
+        "files",
+        "status"
+      ],
+      "additionalProperties": false,
+      "description": "Deliver files (screenshots, reports, artifacts) to the user. Conditionally enabled in remote-environment sessions only."
     }
   }
 }
