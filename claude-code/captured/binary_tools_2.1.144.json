@@ -1,0 +1,620 @@
+{
+  "binary": "/Users/mehmetoneryalcin/.local/share/claude/versions/2.1.144",
+  "binary_only_tools": [
+    "PowerShell",
+    "RemoteTrigger",
+    "SendUserFile"
+  ],
+  "schemas": {
+    "Bash": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "The command to execute",
+          "type": "string"
+        },
+        "timeout": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string"
+        },
+        "run_in_background": {
+          "description": "Set to true to run this command in the background.",
+          "type": "boolean"
+        },
+        "dangerouslyDisableSandbox": {
+          "description": "Set this to true to dangerously override sandbox mode and run commands without sandboxing.",
+          "type": "boolean"
+        },
+        "_simulatedSedEdit": {
+          "description": "Internal: pre-computed sed edit result from preview",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "additionalProperties": false
+    },
+    "CronCreate": {
+      "type": "object",
+      "properties": {
+        "cron": {
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt to enqueue at each fire time.",
+          "type": "string"
+        },
+        "recurring": {
+          "type": "boolean"
+        },
+        "durable": {
+          "description": "true = persist to .claude/scheduled_tasks.json and survive restarts. false (default) = in-memory only, dies when this Claude session ends. Use true only when the user asks the task to survive across sessions.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "cron",
+        "prompt"
+      ],
+      "additionalProperties": false
+    },
+    "CronDelete": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Job ID returned by CronCreate.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "CronList": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "Edit": {
+      "type": "object",
+      "properties": {
+        "file_path": {
+          "description": "The absolute path to the file to modify",
+          "type": "string"
+        },
+        "old_string": {
+          "description": "The text to replace",
+          "type": "string"
+        },
+        "new_string": {
+          "description": "The text to replace it with (must be different from old_string)",
+          "type": "string"
+        },
+        "replace_all": {
+          "description": "Replace all occurrences of old_string (default false)",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "file_path",
+        "old_string",
+        "new_string"
+      ],
+      "additionalProperties": false
+    },
+    "EnterPlanMode": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "EnterWorktree": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "description": "Path to an existing worktree of the current repository to switch into instead of creating a new one. Must appear in `git worktree list` for the current repo. Mutually exclusive with `name`.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExitWorktree": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "remove"
+          ]
+        },
+        "discard_changes": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    "Glob": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "description": "The glob pattern to match files against",
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pattern"
+      ],
+      "additionalProperties": false
+    },
+    "Grep": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "description": "The regular expression pattern to search for in file contents",
+          "type": "string"
+        },
+        "path": {
+          "description": "File or directory to search in (rg PATH). Defaults to current working directory.",
+          "type": "string"
+        },
+        "glob": {
+          "type": "string"
+        },
+        "output_mode": {
+          "type": "string",
+          "enum": [
+            "content",
+            "files_with_matches",
+            "count"
+          ]
+        }
+      },
+      "required": [
+        "pattern"
+      ],
+      "additionalProperties": false
+    },
+    "NotebookEdit": {
+      "type": "object",
+      "properties": {
+        "notebook_path": {
+          "description": "The absolute path to the Jupyter notebook file to edit (must be absolute, not relative)",
+          "type": "string"
+        },
+        "cell_id": {
+          "description": "The ID of the cell to edit. When inserting a new cell, the new cell will be inserted after the cell with this ID, or at the beginning if not specified.",
+          "type": "string"
+        },
+        "new_source": {
+          "description": "The new source for the cell",
+          "type": "string"
+        },
+        "cell_type": {
+          "description": "The type of the cell (code or markdown). If not specified, it defaults to the current cell type. If using edit_mode=insert, this is required.",
+          "type": "string",
+          "enum": [
+            "code",
+            "markdown"
+          ]
+        },
+        "edit_mode": {
+          "description": "The type of edit to make (replace, insert, delete). Defaults to replace.",
+          "type": "string",
+          "enum": [
+            "replace",
+            "insert",
+            "delete"
+          ]
+        }
+      },
+      "required": [
+        "notebook_path",
+        "new_source"
+      ],
+      "additionalProperties": false
+    },
+    "PowerShell": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "The PowerShell command to execute",
+          "type": "string"
+        },
+        "timeout": {
+          "type": "number"
+        },
+        "description": {
+          "description": "Clear, concise description of what this command does in active voice.",
+          "type": "string"
+        },
+        "run_in_background": {
+          "description": "Set to true to run this command in the background.",
+          "type": "boolean"
+        },
+        "dangerouslyDisableSandbox": {
+          "description": "Set this to true to dangerously override sandbox mode and run commands without sandboxing.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "additionalProperties": false
+    },
+    "PushNotification": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "description": "The notification body. Keep it under 200 characters; mobile OSes truncate.",
+          "type": "string",
+          "minItems": 1
+        },
+        "status": {
+          "const": "proactive"
+        }
+      },
+      "required": [
+        "message",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "Read": {
+      "type": "object",
+      "properties": {
+        "file_path": {
+          "description": "The absolute path to the file to read",
+          "type": "string"
+        },
+        "offset": {
+          "description": "The line number to start reading from. Only provide if the file is too large to read at once",
+          "type": "number"
+        },
+        "limit": {
+          "description": "The number of lines to read. Only provide if the file is too large to read at once.",
+          "type": "number"
+        },
+        "pages": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file_path"
+      ],
+      "additionalProperties": false
+    },
+    "RemoteTrigger": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "list",
+            "get",
+            "create",
+            "update",
+            "run"
+          ]
+        },
+        "trigger_id": {
+          "description": "Required for get, update, and run",
+          "type": "string",
+          "pattern": "^[\\w-]+$"
+        },
+        "body": {
+          "description": "Required for create and update; optional for run",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    "ScheduleWakeup": {
+      "type": "object",
+      "properties": {
+        "delaySeconds": {
+          "description": "Seconds from now to wake up. Clamped to [60, 3600] by the runtime.",
+          "type": "number"
+        },
+        "reason": {
+          "description": "One short sentence explaining the chosen delay. Goes to telemetry and is shown to the user. Be specific.",
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "delaySeconds",
+        "reason",
+        "prompt"
+      ],
+      "additionalProperties": false
+    },
+    "SendMessage": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "description": "Recipient: teammate name",
+          "type": "string"
+        },
+        "summary": {
+          "description": "A 5-10 word summary shown as a preview in the UI (required when message is a string)",
+          "type": "string"
+        },
+        "message": {
+          "description": "Plain text message content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "to",
+        "message"
+      ],
+      "additionalProperties": true
+    },
+    "SendUserFile": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "File paths (absolute or relative to cwd) to send to the user.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "caption": {
+          "description": "Optional short caption for the file(s).",
+          "type": "string"
+        },
+        "status": {
+          "description": "Use 'proactive' when you're surfacing a file the user hasn't asked for and needs to see now \u2014 a generated artifact, a completed report. Use 'normal' when replying to something the user just said.",
+          "type": "string",
+          "enum": [
+            "normal",
+            "proactive"
+          ]
+        }
+      },
+      "required": [
+        "files",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ShareOnboardingGuide": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "description": "'check' (default): if ONBOARDING.md is present locally, uploads it to the most-recent guide (creates one if none exist); otherwise reports the existing link without uploading. 'update': upload to a specific guide by short_code. 'create': always make a new link. 'delete': remove a guide.",
+          "type": "string",
+          "enum": [
+            "check",
+            "update",
+            "create",
+            "delete"
+          ],
+          "default": "check"
+        },
+        "short_code": {
+          "description": "Short code of a specific guide to target (returned by a previous call). Honored by check, update, and delete \u2014 skips the org-wide lookup and targets this guide directly.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "Skill": {
+      "type": "object",
+      "properties": {
+        "skill": {
+          "description": "The name of a skill from the available-skills list. Do not guess names.",
+          "type": "string"
+        },
+        "args": {
+          "description": "Optional arguments for the skill",
+          "type": "string"
+        }
+      },
+      "required": [
+        "skill"
+      ],
+      "additionalProperties": true
+    },
+    "TaskCreate": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "description": "A brief title for the task",
+          "type": "string"
+        },
+        "description": {
+          "description": "What needs to be done",
+          "type": "string"
+        },
+        "activeForm": {
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Arbitrary metadata to attach to the task",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "subject",
+        "description"
+      ],
+      "additionalProperties": false
+    },
+    "TaskGet": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "description": "The ID of the task to retrieve",
+          "type": "string"
+        }
+      },
+      "required": [
+        "taskId"
+      ],
+      "additionalProperties": false
+    },
+    "TaskList": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "TaskOutput": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "description": "The task ID to get output from",
+          "type": "string"
+        },
+        "block": {
+          "description": "Whether to wait for completion",
+          "type": "boolean",
+          "default": true
+        },
+        "timeout": {
+          "description": "Max wait time in ms",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 600000,
+          "default": 30000
+        }
+      },
+      "required": [
+        "task_id",
+        "block",
+        "timeout"
+      ],
+      "additionalProperties": false
+    },
+    "TaskStop": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "description": "The ID of the background task to stop",
+          "type": "string"
+        },
+        "shell_id": {
+          "description": "Deprecated: use task_id instead",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TeamCreate": {
+      "type": "object",
+      "properties": {
+        "team_name": {
+          "description": "Name for the new team to create.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Team description/purpose.",
+          "type": "string"
+        },
+        "agent_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "team_name"
+      ],
+      "additionalProperties": false
+    },
+    "TeamDelete": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "WebFetch": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "description": "The URL to fetch content from",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt to run on the fetched content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "prompt"
+      ],
+      "additionalProperties": false
+    },
+    "WebSearch": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "description": "The search query to use",
+          "type": "string",
+          "minItems": 2
+        },
+        "allowed_domains": {
+          "description": "Only include search results from these domains",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_domains": {
+          "description": "Never include search results from these domains",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    },
+    "Write": {
+      "type": "object",
+      "properties": {
+        "file_path": {
+          "description": "The absolute path to the file to write (must be absolute, not relative)",
+          "type": "string"
+        },
+        "content": {
+          "description": "The content to write to the file",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file_path",
+        "content"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
